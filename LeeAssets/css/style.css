@@ -1,19 +1,16 @@
-html {
-    font-family: 'Consolas', 'Lucida Sans', 'Lucida Sans Regular', sans-serif;
-}
-
 body {
     background-repeat: no-repeat;
     background-attachment: fixed;
-    background-color: #222031;
-    background-image: linear-gradient(to top right, #000000, #222031);
+    background-color: #302297;
+    background-image: linear-gradient(to top right, #383442, #302297);
 }
 
-::selection {
+.lee__selection::selection {
     background: #8d8d8d;
 }
   
 .lee__container {
+    font-family: 'Consolas', 'Lucida Sans', 'Lucida Sans Regular', sans-serif;
     overflow: hidden;
     background-color: #ffffff;
     position: absolute;
@@ -23,20 +20,21 @@ body {
     width: 50vw;
     height: 50vh;
     border-radius: 1vh;
+    border: 0.1vw solid #c9c9c9;
+    background: #c9c9c9;
 }
 
 .chatlog__container {
     min-width: 100%;
-    min-height: 92.5%;
     max-height: 94%;
     overflow: auto;
+    background-color: #ffffff;
 }
 
 .chatlog__message__container {
-    /* white-space: pre-line; */
+    white-space: pre-wrap;
     margin: 0.6vh 0.5vh 0vh 0.5vh;
     display: flex;
-    justify-content: flex-start;
     align-items: center;
     min-height: 2vh;
     border-radius: 0.4vw;
@@ -44,7 +42,7 @@ body {
 }
 
 .chatlog__message__container:last-child {
-    margin-bottom: 1vh;
+    margin-bottom: 0.6vh;
 }
 
 .message__identifier {
@@ -69,7 +67,6 @@ body {
     min-width: 100%;
     bottom: 0;
     position: absolute;
-    background: #c9c9c9;
 }
 
 .github__container {
@@ -90,14 +87,14 @@ body {
 }
 
 .github__mark {
-    width: 1vw;
+    width: 2vh;
 }
 
 .input__container {
     display: flex;
     align-self: stretch;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     margin-left: 0.1vw;
     width: 100%;
     max-height: 7.5%;
@@ -109,7 +106,7 @@ body {
     max-height: 2vh;
     border: 0.1vw solid #aaaaaa;
     background: #ffffff;
-    margin: 0vh 0.6vw 0vh 0.2vw;
+    margin: 0.075vh 0.6vw 0vh 0.2vw;
     border-radius: 0.2vw;
     font-size: 1.5vh;
     transition: border 0.5s;
