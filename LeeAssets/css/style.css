@@ -33,7 +33,7 @@ body {
 }
 
 .lee__chatlog__container::-webkit-scrollbar {
-    width: 0.8vw;
+    width: 1.5vh;
 }
 
 .lee__chatlog__container::-webkit-scrollbar-thumb {
