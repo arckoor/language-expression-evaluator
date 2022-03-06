@@ -24,28 +24,29 @@ body {
     background: #c9c9c9;
 }
 
-.chatlog__container {
+.lee__chatlog__container {
     min-width: 100%;
     max-height: 94%;
     overflow: auto;
     background-color: #ffffff;
+    scroll-behavior: smooth;
 }
 
-.chatlog__container::-webkit-scrollbar {
+.lee__chatlog__container::-webkit-scrollbar {
     width: 0.8vw;
 }
 
-.chatlog__container::-webkit-scrollbar-thumb {
+.lee__chatlog__container::-webkit-scrollbar-thumb {
     background-color: #c4c4c4;
     border: 5px solid white;
     border-radius: 15px;
 }
 
-.chatlog__container::-webkit-scrollbar-thumb:hover {
+.lee__chatlog__container::-webkit-scrollbar-thumb:hover {
     background-color: #afafaf;
 }
 
-.chatlog__message__container {
+.lee__chatlog__message__container {
     white-space: pre-wrap;
     margin: 0.6vh 0.5vh 0vh 0.5vh;
     display: flex;
@@ -55,36 +56,36 @@ body {
     font-size: 1.5vh;
 }
 
-.chatlog__message__container:last-child {
+.lee__chatlog__message__container:last-child {
     margin-bottom: 0.6vh;
 }
 
-.message__identifier {
+.lee__message__identifier {
     font-weight: bold;
     margin-left: 0.5vw;
 }
 
-.message__container {
+.lee__message__container {
     margin: 0.1vh 0.3vw 0vh 0.4vw;
     word-break: break-all;
 }
 
-.lee__message__container {
+.lee__self__message__container {
     background: #56668348;
 }
 
-.user__message__container {
+.lee__user__message__container {
     background: #e6e5e55b;
 }
 
-.footer__container {
+.lee__footer__container {
     background: #c9c9c9;
     min-width: 100%;
     bottom: 0;
     position: absolute;
 }
 
-.github__container {
+.lee__github__container {
     justify-content: center;
     height: 1vh;
     padding: 1vh;
@@ -93,19 +94,19 @@ body {
     font-size: 1.2vh;
 }
 
-.github__container a,
-.github__container a:hover,
-.github__container a:visited,
-.github__container a:focus {
+.lee__github__container a,
+.lee__github__container a:hover,
+.lee__github__container a:visited,
+.lee__github__container a:focus {
     text-decoration: none;
     color: inherit;
 }
 
-.github__mark {
+.lee__github__mark {
     width: 2vh;
 }
 
-.input__container {
+.lee__input__container {
     display: flex;
     align-self: stretch;
     align-items: center;
@@ -133,14 +134,18 @@ body {
     border: 0.1vw solid #555555;
 }
 
-.flex__container {
+.lee__input__disabled {
+    background-color: #dddddd;;
+}
+
+.lee__flex__container {
     display: flex;
     justify-content: flex-start;
     align-items: center;
 }
 
 /* https://stackoverflow.com/a/4407335 */
-.no__select {
+.lee__no__select {
     -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none; /* Safari */
     -khtml-user-select: none; /* Konqueror HTML */
