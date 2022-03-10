@@ -67,7 +67,8 @@ body {
 
 .lee__message__container {
     margin: 0.1vh 0.3vw 0vh 0.4vw;
-    word-break: break-word;
+    word-break: normal;
+    overflow-wrap: anywhere;
 }
 
 .lee__self__message__container {
