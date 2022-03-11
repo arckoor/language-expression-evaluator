@@ -1,3 +1,8 @@
+@keyframes lee__fade__in {
+    0% { opacity: 0.15; }
+    100% { opacity: 1; }
+}
+
 body {
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -46,6 +51,7 @@ body {
 }
 
 .lee__chatlog__message__container {
+    animation: lee__fade__in 1s;
     white-space: pre-wrap;
     margin: 0.6vh 0.5vh 0vh 0.5vh;
     display: flex;
