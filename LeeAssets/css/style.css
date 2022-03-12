@@ -61,6 +61,10 @@ body {
     font-size: 1.5vh;
 }
 
+.lee__error__message {
+    color: red;
+}
+
 .lee__chatlog__message__container:last-child {
     margin-bottom: 0.6vh;
 }
