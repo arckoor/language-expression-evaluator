@@ -25,6 +25,7 @@ const LEE_config = {
 };
 let LEE_data;
 let LEE_responses;
+let LEE_matches = {};
 let LEE_history = [];
 let LEE_history_index = 0;
 
@@ -99,6 +100,20 @@ function LEE_sanitize_data() {
 			if (typeof(LEE_responses[topic][rule]["response"]) === "string") {
 				LEE_responses[topic][rule]["response"] = [LEE_responses[topic][rule]["response"]];
 			}
+			if (LEE_responses[topic][rule]["match"]) {
+				const LEE_match = LEE_responses[topic][rule]["match"];
+				const LEE_match_key = `${topic}.${rule}`;
+				for (let match of LEE_match) {
+					match = match.toLowerCase();
+					if (!LEE_matches[match]) {
+						LEE_matches[match] = LEE_match_key;
+					} else {
+						if (LEE_DEBUG_MODE) {
+							LEE_print_debug_error(`Match "${match}" of ${LEE_match_key} is already used in ${LEE_matches[match]}`);
+						}
+					}
+				}
+			}
 		}
 	}
 }
@@ -118,11 +133,6 @@ function LEE_index_from_string(data, responseKey) {
 		}
 	}
 	return LEE_current_object;
-}
-
-async function LEE_print_debug_error(msg) {
-	const LEE_debug_msg = await LEE_construct_message(LEE_config.debugName, msg);
-	LEE_debug_msg.classList.add(LEE_css_selectors.error);
 }
 
 async function LEE_reply_from_key(key, previousKey=null) {
@@ -177,6 +187,75 @@ async function LEE_reply_from_key(key, previousKey=null) {
 	return [undefined];
 }
 
+function LEE_calculate_match(input) {
+	return input;
+}
+
+async function LEE_get_input() {
+	let LEE_user_input = LEE_input.value;
+	LEE_add_to_history(LEE_user_input);
+	LEE_input.value = null;
+	let LEE_treated_input = LEE_sanitize_input(LEE_user_input);
+	if (LEE_treated_input === "" || LEE_treated_input === " ") {
+		return;
+	}
+	await LEE_construct_message(LEE_config.userName, LEE_user_input);
+	// do something with the input here (reply with something)
+	const LEE_best_match = LEE_calculate_match(LEE_treated_input);
+	const LEE_results = await LEE_reply_from_key(LEE_best_match);
+	let LEE_reply = LEE_results[0];
+	let LEE_delay = LEE_results[1];
+	if (LEE_reply === undefined && LEE_config.undefinedMessage !== null) {
+		LEE_reply = LEE_config.undefinedMessage;
+	}
+	if (LEE_reply) {
+		if (LEE_delay === undefined || LEE_delay === null) {
+			LEE_delay = LEE_randint(300, 500);
+		}
+		await LEE_construct_message(LEE_config.leeName, LEE_reply, LEE_delay);
+	}
+	LEE_scroll_down();
+}
+
+function LEE_input_listener(event) {
+	if (event.code === "Enter") {
+		LEE_lock_wrapper(LEE_get_input);
+	} else if (event.code === "ArrowUp") {
+		LEE_set_from_history(1);
+	} else if (event.code === "ArrowDown") {
+		LEE_set_from_history(-1);
+	}
+}
+
+LEE_input.addEventListener("keydown", LEE_input_listener);
+
+function LEE_sanitize_input(message) {
+	message = message.trim(); // remove trailing and preceeding spaces
+	// https://stackoverflow.com/a/3286919
+	message = message.replace(/\s\s+/g, " ").toLowerCase(); // remove multiple spaces
+	return message;
+}
+
+function LEE_add_to_history(item) {
+	if (LEE_history[0] !== item) {
+		LEE_history.unshift(item);
+	}
+	LEE_history_index = -1;
+}
+
+function LEE_set_from_history(index) {
+	if (LEE_history_index+index === -1) {
+		LEE_history_index = -1;
+		LEE_input.value = null;
+	}
+	if (LEE_history_index+index > -1 && LEE_history_index+index < LEE_history.length) {
+		LEE_history_index += index;
+	}
+	if (LEE_history[LEE_history_index]) {
+		LEE_input.value = LEE_history[LEE_history_index];
+	}
+}
+
 async function LEE_construct_message(from, message, delay=0) {
 	const LEE_from_user = from === LEE_config.userName;
 	const LEE_chatlog_msg_container = document.createElement("div");
@@ -199,69 +278,6 @@ async function LEE_construct_message(from, message, delay=0) {
 	LEE_chatlog_container.appendChild(LEE_chatlog_msg_container);
 	LEE_scroll_down();
 	return LEE_chatlog_msg_container;
-}
-
-function LEE_sanitize_input(message) {
-	message = message.trim(); // remove trailing and preceeding spaces
-	// https://stackoverflow.com/a/3286919
-	message = message.replace(/\s\s+/g, " ").toLowerCase(); // remove multiple spaces
-	return message;
-}
-
-async function LEE_get_input() {
-	let LEE_user_input = LEE_input.value;
-	LEE_add_to_history(LEE_user_input);
-	LEE_input.value = null;
-	let LEE_treated_input = LEE_sanitize_input(LEE_user_input);
-	if (LEE_treated_input === "" || LEE_treated_input === " ") {
-		return;
-	}
-	await LEE_construct_message(LEE_config.userName, LEE_user_input);
-	// do something with the input here (reply with something)
-	const LEE_results = await LEE_reply_from_key(LEE_user_input);
-	let LEE_reply = LEE_results[0];
-	let LEE_delay = LEE_results[1];
-	if (LEE_reply === undefined && LEE_config.undefinedMessage !== null) {
-		LEE_reply = LEE_config.undefinedMessage;
-	}
-	if (LEE_reply) {
-		if (LEE_delay === undefined || LEE_delay === null) {
-			LEE_delay = LEE_randint(300, 500);
-		}
-		await LEE_construct_message(LEE_config.leeName, LEE_reply, LEE_delay);
-		// await LEE_construct_message(LEE_config.leeName, LEE_reply, 200+Math.floor(Math.random()*201)-100);
-	}
-	LEE_scroll_down();
-}
-
-function LEE_input_listener(event) {
-	if (event.code === "Enter") {
-		LEE_lock_wrapper(LEE_get_input);
-	} else if (event.code === "ArrowUp") {
-		LEE_set_from_history(1);
-	} else if (event.code === "ArrowDown") {
-		LEE_set_from_history(-1);
-	}
-}
-
-LEE_input.addEventListener("keydown", LEE_input_listener);
-
-function LEE_add_to_history(item) {
-	LEE_history.unshift(item);
-	LEE_history_index = -1;
-}
-
-function LEE_set_from_history(index) {
-	if (LEE_history_index+index === -1) {
-		LEE_history_index = -1;
-		LEE_input.value = null;
-	}
-	if (LEE_history_index+index > -1 && LEE_history_index+index < LEE_history.length) {
-		LEE_history_index += index;
-	}
-	if (LEE_history[LEE_history_index]) {
-		LEE_input.value = LEE_history[LEE_history_index];
-	}
 }
 
 function LEE_obtain_lock() {
@@ -293,4 +309,108 @@ function LEE_sleep(ms) {
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random#getting_a_random_integer_between_two_values_inclusive
 function LEE_randint(min, max) {
 	return Math.floor(Math.random()* (max - min + 1) + min);
+}
+
+async function LEE_print_debug_error(msg) {
+	const LEE_debug_msg = await LEE_construct_message(LEE_config.debugName, msg);
+	LEE_debug_msg.classList.add(LEE_css_selectors.error);
+}
+
+// https://github.com/gustf/js-levenshtein
+function LEE_levenshtein(a, b) {
+	if (a === b) {
+		return 0;
+	}
+
+	if (a.length > b.length) {
+		let tmp = a;
+		a = b;
+		b = tmp;
+	}
+
+	let la = a.length;
+	let lb = b.length;
+
+	while (la > 0 && (a.charCodeAt(la - 1) === b.charCodeAt(lb - 1))) {
+		la--;
+		lb--;
+	}
+
+	let offset = 0;
+
+	while (offset < la && (a.charCodeAt(offset) === b.charCodeAt(offset))) {
+		offset++;
+	}
+
+	la -= offset;
+	lb -= offset;
+
+	if (la === 0 || lb < 3) {
+		return lb;
+	}
+
+	let x = 0;
+	let y;
+	let d0;
+	let d1;
+	let d2;
+	let d3;
+	let dd;
+	let dy;
+	let ay;
+	let bx0;
+	let bx1;
+	let bx2;
+	let bx3;
+
+	let vector = [];
+
+	for (y = 0; y < la; y++) {
+		vector.push(y + 1);
+		vector.push(a.charCodeAt(offset + y));
+	}
+
+	let len = vector.length - 1;
+
+	for (; x < lb - 3;) {
+		bx0 = b.charCodeAt(offset + (d0 = x));
+		bx1 = b.charCodeAt(offset + (d1 = x + 1));
+		bx2 = b.charCodeAt(offset + (d2 = x + 2));
+		bx3 = b.charCodeAt(offset + (d3 = x + 3));
+		dd = (x += 4);
+		for (y = 0; y < len; y += 2) {
+			dy = vector[y];
+			ay = vector[y + 1];
+			d0 = LEE_levenshtein_min(dy, d0, d1, bx0, ay);
+			d1 = LEE_levenshtein_min(d0, d1, d2, bx1, ay);
+			d2 = LEE_levenshtein_min(d1, d2, d3, bx2, ay);
+			dd = LEE_levenshtein_min(d2, d3, dd, bx3, ay);
+			vector[y] = dd;
+			d3 = d2;
+			d2 = d1;
+			d1 = d0;
+			d0 = dy;
+		}
+	}
+
+	for (; x < lb;) {
+		bx0 = b.charCodeAt(offset + (d0 = x));
+		dd = ++x;
+		for (y = 0; y < len; y += 2) {
+			dy = vector[y];
+			vector[y] = dd = LEE_levenshtein_min(dy, d0, dd, bx0, vector[y + 1]);
+			d0 = dy;
+		}
+	}
+	return dd;
+}
+
+function LEE_levenshtein_min(d0, d1, d2, bx, ay) {
+	return d0 < d1 || d2 < d1
+		? d0 > d2
+			? d2 + 1
+			: d0 + 1
+		: bx === ay
+			? d1
+			: d1 + 1;
 }
