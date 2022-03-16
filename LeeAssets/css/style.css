@@ -42,7 +42,7 @@ body {
 
 .lee__chatlog__container::-webkit-scrollbar-thumb {
     background-color: #c4c4c4;
-    border: 5px solid white;
+    border: 5px solid #ffffff;
     border-radius: 15px;
 }
 
@@ -62,7 +62,7 @@ body {
 }
 
 .lee__error__message {
-    color: red;
+    color: #ff0000;
 }
 
 .lee__chatlog__message__container:last-child {
