@@ -155,7 +155,11 @@ body {
     align-items: center;
 }
 
-/* https://stackoverflow.com/a/4407335 */
+/*
+title: How to disable text selection highlighting
+date: 06.03.2022
+source: https://stackoverflow.com/a/4407335
+*/
 .lee__no__select {
     -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none; /* Safari */

@@ -231,7 +231,12 @@ LEE_input.addEventListener("keydown", LEE_input_listener);
 
 function LEE_sanitize_input(message) {
 	message = message.trim(); // remove trailing and preceeding spaces
-	// https://stackoverflow.com/a/3286919
+	/*
+	title: Remove all multiple spaces in Javascript and replace with single space [duplicate]
+	author: Greg Shackles
+	date: 12.03.2022
+	source: https://stackoverflow.com/a/3286919
+	*/
 	message = message.replace(/\s\s+/g, " ").toLowerCase(); // remove multiple spaces
 	return message;
 }
@@ -301,22 +306,41 @@ function LEE_scroll_down() {
 	LEE_chatlog_container.scrollTop = LEE_chatlog_container.scrollHeight;
 }
 
-// https://stackoverflow.com/a/39914235
-function LEE_sleep(ms) {
-	return new Promise(r => setTimeout(r, ms));
-}
-
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random#getting_a_random_integer_between_two_values_inclusive
-function LEE_randint(min, max) {
-	return Math.floor(Math.random()* (max - min + 1) + min);
-}
-
 async function LEE_print_debug_error(msg) {
 	const LEE_debug_msg = await LEE_construct_message(LEE_config.debugName, msg);
 	LEE_debug_msg.classList.add(LEE_css_selectors.error);
 }
 
-// https://github.com/gustf/js-levenshtein
+/*
+title: What is the JavaScript version of sleep()?
+author: Dan Dascalescu
+date: 06.03.2022
+source: https://stackoverflow.com/a/39914235
+*/
+function LEE_sleep(ms) {
+	return new Promise(r => setTimeout(r, ms));
+}
+
+/*
+title: Math.random()
+date: 14.03.2022
+source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random#getting_a_random_integer_between_two_values_inclusive
+*/
+function LEE_randint(min, max) {
+	return Math.floor(Math.random()* (max - min + 1) + min);
+}
+
+/*
+title: js-levenshtein
+author: Gustaf Andersson
+date: 16.03.2022
+version: 1.1.6
+source: https://github.com/gustf/js-levenshtein
+license: MIT - Copyright (c) 2017 Gustaf Andersson
+
+For simplicity, these two functions are included in this file instead of imported / required. This is meant to be runnable stand-alone (no node.js / webpack / ...).
+The only modifications to this code were changing "var" to "let" and renaming the functions to fit the rest of this file.
+*/
 function LEE_levenshtein(a, b) {
 	if (a === b) {
 		return 0;
