@@ -119,6 +119,9 @@ function LEE_sanitize_data() {
 }
 
 function LEE_index_from_string(data, responseKey) {
+	if (!responseKey) {
+		return undefined;
+	}
 	responseKey = responseKey.replace("rules.", "");
 	const LEE_subkeys = responseKey.split(".");
 	let LEE_current_object = data;
@@ -187,8 +190,50 @@ async function LEE_reply_from_key(key, previousKey=null) {
 	return [undefined];
 }
 
+function LEE_calculate_cost(key, input) {
+	const LEE_distance = LEE_levenshtein(key, input);
+	const LEE_key_segments = key.split(" ");
+	const LEE_input_segments = input.split(" ");
+
+	let LEE_long, LEE_short;
+	if (LEE_key_segments.length > LEE_input_segments.length) {
+		LEE_long = LEE_key_segments;
+		LEE_short = LEE_input_segments;
+	} else {
+		LEE_long = LEE_input_segments;
+		LEE_short = LEE_key_segments;
+	}
+	let LEE_combined_part_distance = 0;
+	for (const partK of LEE_long) {
+		let LEE_lowest_part_distance = null;
+		for (const partI of LEE_short) {
+			let LEE_part_distance = LEE_levenshtein(partK, partI);
+			if (LEE_lowest_part_distance === null || LEE_part_distance < LEE_lowest_part_distance) {
+				LEE_lowest_part_distance = LEE_part_distance;
+			}
+		}
+		LEE_combined_part_distance += LEE_lowest_part_distance;
+	}
+	return LEE_combined_part_distance + LEE_distance;
+}
+
 function LEE_calculate_match(input) {
-	return input;
+	let LEE_cost = null;
+	let LEE_best_key = null;
+	for (const key in LEE_matches) {
+		let LEE_new_cost = LEE_calculate_cost(key, input);
+		if (LEE_cost === null || LEE_new_cost < LEE_cost) {
+			LEE_cost = LEE_new_cost;
+			LEE_best_key = LEE_matches[key];
+			if (LEE_DEBUG_MODE) {
+				LEE_print_debug_error(`Best cost for "${input}" is ${LEE_cost} for key "${key}"`);
+			}
+		}
+		if (LEE_cost === 0) {
+			return LEE_best_key;
+		}
+	}
+	return LEE_best_key;
 }
 
 async function LEE_get_input() {
