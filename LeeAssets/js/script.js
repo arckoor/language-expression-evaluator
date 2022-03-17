@@ -11,6 +11,7 @@ const LEE_css_selectors = {
 	no_select: "lee__no__select",
 	msg_container: "lee__message__container",
 	error: "lee__error__message",
+	debug: "lee__debug__message",
 	selection: "lee__selection"
 };
 const LEE_config_file_name = "./LeeAssets/config/LeeConfig.json";
@@ -176,16 +177,17 @@ async function LEE_reply_from_key(key, previousKey=null) {
 				}
 			}
 		}
-	}
-	if (LEE_reply !== null) {
-		return [LEE_reply, LEE_cr["delay"]];
-	}
-	if (LEE_DEBUG_MODE) {
-		let LEE_prevkey_addition = "";
-		if (previousKey) {
-			LEE_prevkey_addition = `\n\nFrom Key: ${previousKey} : ${LEE_pretty_JSON(LEE_index_from_string(LEE_responses, previousKey))}`;
+
+		if (LEE_reply !== null) {
+			return [LEE_reply, LEE_cr["delay"]];
 		}
-		LEE_print_debug_error(`No response defined for:\n${key} : ${LEE_pretty_JSON(LEE_index_from_string(LEE_responses, key))}${LEE_prevkey_addition}`);
+		if (LEE_DEBUG_MODE) {
+			let LEE_prevkey_addition = "";
+			if (previousKey) {
+				LEE_prevkey_addition = `\n\nFrom Key: ${previousKey} : ${LEE_pretty_JSON(LEE_index_from_string(LEE_responses, previousKey))}`;
+			}
+			LEE_print_debug_error(`No response defined for:\n${key} : ${LEE_pretty_JSON(LEE_index_from_string(LEE_responses, key))}${LEE_prevkey_addition}`);
+		}
 	}
 	return [undefined];
 }
@@ -226,12 +228,15 @@ function LEE_calculate_match(input) {
 			LEE_cost = LEE_new_cost;
 			LEE_best_key = LEE_matches[key];
 			if (LEE_DEBUG_MODE) {
-				LEE_print_debug_error(`Best cost for "${input}" is ${LEE_cost} for key "${key}"`);
+				LEE_print_debug_error(`Best cost is ${LEE_cost} with key "${key}" from rule ${LEE_matches[key]}`, LEE_css_selectors.debug);
 			}
 		}
 		if (LEE_cost === 0) {
 			return LEE_best_key;
 		}
+	}
+	if (input.length*1.20 < LEE_cost) {
+		return null;
 	}
 	return LEE_best_key;
 }
@@ -351,9 +356,9 @@ function LEE_scroll_down() {
 	LEE_chatlog_container.scrollTop = LEE_chatlog_container.scrollHeight;
 }
 
-async function LEE_print_debug_error(msg) {
+async function LEE_print_debug_error(msg, severity=LEE_css_selectors.error) {
 	const LEE_debug_msg = await LEE_construct_message(LEE_config.debugName, msg);
-	LEE_debug_msg.classList.add(LEE_css_selectors.error);
+	LEE_debug_msg.classList.add(severity);
 }
 
 /*

@@ -65,6 +65,10 @@ body {
     color: #ff0000;
 }
 
+.lee__debug__message {
+    color: #5ead2a;
+}
+
 .lee__chatlog__message__container:last-child {
     margin-bottom: 0.6vh;
 }
