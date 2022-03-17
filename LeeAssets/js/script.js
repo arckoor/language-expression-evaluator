@@ -88,9 +88,7 @@ function LEE_sanitize_data() {
 	for (const topic in LEE_responses) {
 		for (const rule in LEE_responses[topic]) {
 			for (const key of LEE_config.attributes) {
-				if (key in LEE_responses[topic][rule]) {
-					// do something
-				} else {
+				if (!(key in LEE_responses[topic][rule])) {
 					LEE_responses[topic][rule][key] = key === "counter" ? 0 : null;
 				}
 			}
@@ -223,7 +221,7 @@ function LEE_calculate_match(input) {
 	let LEE_cost = null;
 	let LEE_best_key = null;
 	for (const key in LEE_matches) {
-		let LEE_new_cost = LEE_calculate_cost(key, input);
+		let LEE_new_cost = LEE_calculate_cost(key.toLowerCase(), input);
 		if (LEE_cost === null || LEE_new_cost < LEE_cost) {
 			LEE_cost = LEE_new_cost;
 			LEE_best_key = LEE_matches[key];
