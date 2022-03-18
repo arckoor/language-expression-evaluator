@@ -24,7 +24,6 @@ const LEE_config = {
 	attributes: null,
 	undefinedMessage: null
 };
-let LEE_data;
 let LEE_responses;
 let LEE_matches = {};
 let LEE_history = [];
@@ -33,20 +32,19 @@ let LEE_history_index = 0;
 LEE_lock_wrapper(LEE);
 
 async function LEE() {
-	LEE_obtain_lock();
 	await LEE_load_config();
 	LEE_sanitize_data();
 	LEE_set_equal_name_length();
-	if (LEE_config.initMsg !== undefined && LEE_config.initMsg != null) {
+	if (LEE_config.initMsg !== undefined && LEE_config.initMsg !== null) {
 		await LEE_construct_message(LEE_config.leeName, LEE_config.initMsg, LEE_config.initMsgDelay);
 	}
-	LEE_discard_lock();
 }
 
 async function LEE_load_config() {
+	let LEE_data;
 	LEE_data = await ( await fetch(LEE_config_file_name) ).json();
 	for (const key in LEE_config) {
-		LEE_config[key]= LEE_data.config[key];
+		LEE_config[key] = LEE_data.config[key];
 	}
 	LEE_responses = LEE_data.rules;
 }
@@ -76,7 +74,7 @@ function LEE_set_equal_name_length() {
 		if (key.indexOf("Name") !== -1) {
 			if (LEE_config[key]) {
 				const LEE_length_diff = Math.abs(LEE_max_name_len - LEE_config[key].length); // get difference between max and name length
-				for (let i=0; i<LEE_length_diff; i++) {
+				for (let i = 0; i < LEE_length_diff; i++) {
 					LEE_config[key] += String.fromCharCode(160); // &nbsp;
 				}
 			}
@@ -137,7 +135,7 @@ function LEE_index_from_string(data, responseKey) {
 	return LEE_current_object;
 }
 
-async function LEE_reply_from_key(key, previousKey=null) {
+async function LEE_reply_from_key(key, previousKey = null) {
 	const LEE_cr = LEE_index_from_string(LEE_responses, key); // cr -> current_response
 	let LEE_reply = null;
 	let LEE_skip = false;
@@ -147,7 +145,7 @@ async function LEE_reply_from_key(key, previousKey=null) {
 		}
 		if (LEE_cr["response"] !== null || LEE_skip) {
 			if (!LEE_skip && LEE_cr["random"]) { // pick a random reponse
-				const LEE_random_index = LEE_randint(0, LEE_cr["response"].length-1);
+				const LEE_random_index = LEE_randint(0, LEE_cr["response"].length - 1);
 				LEE_reply = LEE_cr["response"][LEE_random_index];
 			} else {
 				if (!LEE_skip && LEE_cr["counter"] !== LEE_cr["response"].length) { // check if the counter is at the arrays last index
@@ -157,7 +155,7 @@ async function LEE_reply_from_key(key, previousKey=null) {
 					if (LEE_cr["ref"] !== null) { // at the end of the array, if there is a ref redirect there
 						let LEE_new_key = LEE_cr["ref"];
 						if (LEE_new_key.indexOf("this") !== -1) { // if in the same subkey, take the original key, remove the lowest level key and then append everything after "this."
-							LEE_new_key = key.substring(0, key.lastIndexOf(".")+1) + LEE_new_key.replace("this.", "");
+							LEE_new_key = key.substring(0, key.lastIndexOf(".") + 1) + LEE_new_key.replace("this.", "");
 						}
 						if (previousKey === key) { // would recurse until infinity (or until the stack runs out of space)
 							if (LEE_DEBUG_MODE) {
@@ -170,7 +168,7 @@ async function LEE_reply_from_key(key, previousKey=null) {
 						}
 						return await LEE_reply_from_key(LEE_new_key, previousKey); // recurse to resolve new key
 					} else {
-						LEE_reply = LEE_cr["response"][LEE_cr["counter"]-1]; // repeat the last entry the array has
+						LEE_reply = LEE_cr["response"][LEE_cr["counter"] - 1]; // repeat the last entry the array has
 					}
 				}
 			}
@@ -192,16 +190,13 @@ async function LEE_reply_from_key(key, previousKey=null) {
 
 function LEE_calculate_cost(key, input) {
 	const LEE_distance = LEE_levenshtein(key, input);
-	const LEE_key_segments = key.split(" ");
-	const LEE_input_segments = input.split(" ");
+	let LEE_long = key.split(" ");
+	let LEE_short = input.split(" ");
 
-	let LEE_long, LEE_short;
-	if (LEE_key_segments.length > LEE_input_segments.length) {
-		LEE_long = LEE_key_segments;
-		LEE_short = LEE_input_segments;
-	} else {
-		LEE_long = LEE_input_segments;
-		LEE_short = LEE_key_segments;
+	if (LEE_short.length > LEE_long.length) {
+		let tmp = LEE_short;
+		LEE_short = LEE_long;
+		LEE_long = tmp;
 	}
 	let LEE_combined_part_distance = 0;
 	for (const partK of LEE_long) {
@@ -233,7 +228,7 @@ function LEE_calculate_match(input) {
 			return LEE_best_key;
 		}
 	}
-	if (input.length*1.20 < LEE_cost) {
+	if (input.length * 1.20 < LEE_cost) {
 		return null;
 	}
 	return LEE_best_key;
@@ -248,7 +243,6 @@ async function LEE_get_input() {
 		return;
 	}
 	await LEE_construct_message(LEE_config.userName, LEE_user_input);
-	// do something with the input here (reply with something)
 	const LEE_best_match = LEE_calculate_match(LEE_treated_input);
 	const LEE_results = await LEE_reply_from_key(LEE_best_match);
 	let LEE_reply = LEE_results[0];
@@ -297,11 +291,11 @@ function LEE_add_to_history(item) {
 }
 
 function LEE_set_from_history(index) {
-	if (LEE_history_index+index === -1) {
+	if (LEE_history_index + index === -1) {
 		LEE_history_index = -1;
 		LEE_input.value = null;
 	}
-	if (LEE_history_index+index > -1 && LEE_history_index+index < LEE_history.length) {
+	if (LEE_history_index + index > -1 && LEE_history_index + index < LEE_history.length) {
 		LEE_history_index += index;
 	}
 	if (LEE_history[LEE_history_index]) {
@@ -309,7 +303,7 @@ function LEE_set_from_history(index) {
 	}
 }
 
-async function LEE_construct_message(from, message, delay=0) {
+async function LEE_construct_message(from, message, delay = 0) {
 	const LEE_from_user = from === LEE_config.userName;
 	const LEE_chatlog_msg_container = document.createElement("div");
 	const LEE_msg_identifier = document.createElement("div");
@@ -354,7 +348,7 @@ function LEE_scroll_down() {
 	LEE_chatlog_container.scrollTop = LEE_chatlog_container.scrollHeight;
 }
 
-async function LEE_print_debug_error(msg, severity=LEE_css_selectors.error) {
+async function LEE_print_debug_error(msg, severity = LEE_css_selectors.error) {
 	const LEE_debug_msg = await LEE_construct_message(LEE_config.debugName, msg);
 	LEE_debug_msg.classList.add(severity);
 }
@@ -375,7 +369,7 @@ date: 14.03.2022
 source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random#getting_a_random_integer_between_two_values_inclusive
 */
 function LEE_randint(min, max) {
-	return Math.floor(Math.random()* (max - min + 1) + min);
+	return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
 /*

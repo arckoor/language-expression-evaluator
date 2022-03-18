@@ -67,6 +67,21 @@
         ],
         "no-trailing-spaces": [
             "error"
+        ],
+        "space-infix-ops" : [
+            "error",
+            { "int32Hint" : false }
+        ],
+        "no-multi-spaces" : [
+            "error",
+            { "ignoreEOLComments" : true }
+        ],
+        "semi-spacing" : [
+            "error",
+            {
+                "before" : false,
+                "after" : true
+            }
         ]
     }
 }
