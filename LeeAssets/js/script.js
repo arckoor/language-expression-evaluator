@@ -279,10 +279,10 @@ function LEE_detect_command(input) {
 function LEE_handle_command(input) {
 	const command = input.split(" ")[0];
 	switch (command) {
-		case "!clear": // clear
+		case "!clear":
 			LEE_chatlog_container.innerHTML = "";
 			break;
-		case "!reinit": // reinit
+		case "!reinit":
 			// reset all attributes
 			LEE_responses = null;
 			LEE_matches = {};
@@ -292,17 +292,18 @@ function LEE_handle_command(input) {
 			LEE_lock_wrapper(LEE); // call init function again
 			LEE_scroll_down();
 			break;
-		case "!search": // search
+		case "!search":
 			{
 				for (const child of LEE_chatlog_container.children) {
 					child.classList.remove(LEE_css_selectors.search); // remove from everything
 				}
-				let LEE_search_query = input.replace(LEE_commands[2], "").trim();
-				for (const child of LEE_chatlog_container.children) {
-					if (child.innerText.indexOf(LEE_search_query) !== -1) { // only if innerText contains the search query and is not from the user
+				let LEE_search_query = input.replace("!search", "").trim();
+				let LEE_children = Array.from(LEE_chatlog_container.children);
+				LEE_children.forEach ((child, index) => {
+					if (child.innerText.indexOf(LEE_search_query) !== -1 && index !== LEE_children.length - 1) { // only if innerText contains the search query and it is not the search query itself
 						child.classList.add(LEE_css_selectors.search);
 					}
-				}
+				});
 			}
 			break;
 	}
