@@ -10,9 +10,10 @@ const LEE_css_selectors = {
 	msg_identifier: "lee__message__identifier",
 	no_select: "lee__no__select",
 	msg_container: "lee__message__container",
+	search: "lee__search__highlight",
 	error: "lee__error__message",
 	debug: "lee__debug__message",
-	selection: "lee__selection"
+	selection: "lee__selection",
 };
 const LEE_config_file_name = "./LeeAssets/config/LeeConfig.json";
 const LEE_config = {
@@ -23,12 +24,14 @@ const LEE_config = {
 	initMsgDelay: null,
 	attributes: null,
 	undefinedMessage: null,
+	enableCommands: null,
 	weights: {
 		segmentPower: 1,
 		distanceMultiplier: 1,
 		partMultiplier: 1
 	}
 };
+const LEE_commands = ["!clear", "!reinit", "!search"];
 let LEE_responses;
 let LEE_matches = {};
 let LEE_segments = {};
@@ -264,15 +267,61 @@ function LEE_calculate_match(input) {
 	return LEE_best_key;
 }
 
+function LEE_detect_command(input) {
+	for (const command of LEE_commands) {
+		if (input.split(" ")[0].indexOf(command) !== -1) { // detects commands only if they occur at the start
+			return	true;
+		}
+	}
+	return false;
+}
+
+function LEE_handle_command(input) {
+	const command = input.split(" ")[0];
+	switch (command) {
+		case "!clear": // clear
+			LEE_chatlog_container.innerHTML = "";
+			break;
+		case "!reinit": // reinit
+			// reset all attributes
+			LEE_responses = null;
+			LEE_matches = {};
+			LEE_segments = {};
+			LEE_history = [];
+			LEE_history_index = 0;
+			LEE_lock_wrapper(LEE); // call init function again
+			LEE_scroll_down();
+			break;
+		case "!search": // search
+			{
+				for (const child of LEE_chatlog_container.children) {
+					child.classList.remove(LEE_css_selectors.search); // remove from everything
+				}
+				let LEE_search_query = input.replace(LEE_commands[2], "").trim();
+				for (const child of LEE_chatlog_container.children) {
+					if (child.innerText.indexOf(LEE_search_query) !== -1) { // only if innerText contains the search query and is not from the user
+						child.classList.add(LEE_css_selectors.search);
+					}
+				}
+			}
+			break;
+	}
+}
+
 async function LEE_get_input() {
 	let LEE_user_input = LEE_input.value;
 	LEE_add_to_history(LEE_user_input);
 	LEE_input.value = null;
 	let LEE_treated_input = LEE_sanitize_input(LEE_user_input);
+	let LEE_command_input = LEE_sanitize_input(LEE_user_input, false);
 	if (LEE_treated_input === "" || LEE_treated_input === " ") {
 		return;
 	}
 	await LEE_construct_message(LEE_config.userName, LEE_user_input);
+	if (LEE_config.enableCommands && LEE_detect_command(LEE_command_input)) {
+		LEE_handle_command(LEE_command_input);
+		return;
+	}
 	const LEE_best_match = LEE_calculate_match(LEE_treated_input);
 	const LEE_results = await LEE_reply_from_key(LEE_best_match);
 	let LEE_reply = LEE_results[0];
@@ -301,7 +350,7 @@ function LEE_input_listener(event) {
 
 LEE_input.addEventListener("keydown", LEE_input_listener);
 
-function LEE_sanitize_input(message) {
+function LEE_sanitize_input(message, lower = true) {
 	message = message.trim(); // remove trailing and preceeding spaces
 	/*
 	title: Remove all multiple spaces in Javascript and replace with single space [duplicate]
@@ -309,7 +358,10 @@ function LEE_sanitize_input(message) {
 	date: 12.03.2022
 	source: https://stackoverflow.com/a/3286919
 	*/
-	message = message.replace(/\s\s+/g, " ").toLowerCase(); // remove multiple spaces
+	message = message.replace(/\s\s+/g, " "); // remove multiple spaces
+	if (lower) {
+		message = message.toLowerCase();
+	}
 	return message;
 }
 

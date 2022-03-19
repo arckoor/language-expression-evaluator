@@ -13,7 +13,7 @@ body {
 .lee__selection::selection {
     background: #8d8d8d;
 }
-  
+
 .lee__container {
     font-family: 'Consolas', 'Lucida Sans', 'Lucida Sans Regular', sans-serif;
     overflow: hidden;
@@ -53,12 +53,16 @@ body {
 .lee__chatlog__message__container {
     animation: lee__fade__in 1s;
     white-space: pre-wrap;
-    margin: 0.6vh 0.5vh 0vh 0.5vh;
+    margin: 0.6vh 0.5vh 0 0.5vh;
     display: flex;
     align-items: center;
     min-height: 2vh;
     border-radius: 0.4vw;
     font-size: 1.5vh;
+}
+
+.lee__search__highlight {
+    background: #ffbd72 !important; /* using !important for overwriting other background values */
 }
 
 .lee__error__message {
@@ -80,7 +84,7 @@ body {
 }
 
 .lee__message__container {
-    margin: 0.1vh 0.3vw 0vh 0.4vw;
+    margin: 0.1vh 0.3vw 0 0.4vw;
     word-break: normal;
     overflow-wrap: anywhere;
 }
@@ -137,7 +141,7 @@ body {
     height: 2vh;
     border: 0.1vw solid #aaaaaa;
     background: #ffffff;
-    margin: 0.075vh 0.6vw 0vh 0.2vw;
+    margin: 0.075vh 0.6vw 0 0.2vw;
     border-radius: 0.2vw;
     font-size: 1.5vh;
     transition: border 0.5s;
