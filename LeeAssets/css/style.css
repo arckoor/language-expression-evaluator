@@ -10,9 +10,6 @@ body {
     background-image: linear-gradient(to top right, #383442, #302297);
 }
 
-.lee__selection::selection {
-    background: #8d8d8d;
-}
 
 .lee__container {
     font-family: 'Consolas', 'Lucida Sans', 'Lucida Sans Regular', sans-serif;
@@ -22,16 +19,13 @@ body {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    width: 50vw;
-    height: 50vh;
+    width: 80vw; /* 50vw */
+    height: 80vh; /* 50vh */
     border-radius: 1vh;
-    border: 0.1vw solid #c9c9c9;
-    background: #c9c9c9;
 }
 
 .lee__chatlog__container {
-    background: #ffffff;
-    height: 94%;
+    height: 96.5%; /* 94% */
     overflow: auto;
     scroll-behavior: smooth;
 }
@@ -41,13 +35,7 @@ body {
 }
 
 .lee__chatlog__container::-webkit-scrollbar-thumb {
-    background-color: #c4c4c4;
-    border: 5px solid #ffffff;
     border-radius: 15px;
-}
-
-.lee__chatlog__container::-webkit-scrollbar-thumb:hover {
-    background-color: #afafaf;
 }
 
 .lee__chatlog__message__container {
@@ -59,18 +47,6 @@ body {
     min-height: 2vh;
     border-radius: 0.4vw;
     font-size: 1.5vh;
-}
-
-.lee__search__highlight {
-    background: #ffbd72 !important; /* using !important for overwriting other background values */
-}
-
-.lee__error__message {
-    color: #ff0000;
-}
-
-.lee__debug__message {
-    color: #5ead2a;
 }
 
 .lee__chatlog__message__container:last-child {
@@ -89,16 +65,7 @@ body {
     overflow-wrap: anywhere;
 }
 
-.lee__self__message__container {
-    background: #56668348;
-}
-
-.lee__user__message__container {
-    background: #e6e5e55b;
-}
-
 .lee__footer__container {
-    background: #c9c9c9;
     min-width: 100%;
     bottom: 0;
     position: absolute;
@@ -109,7 +76,6 @@ body {
     height: 1vh;
     padding: 1vh;
     margin-right: 0.3vw;
-    border-right: 0.1vw solid #7c7c7c73;
     font-size: 1.2vh;
 }
 
@@ -139,8 +105,6 @@ body {
 .lee__input {
     width: 100%;
     height: 2vh;
-    border: 0.1vw solid #aaaaaa;
-    background: #ffffff;
     margin: 0.075vh 0.6vw 0 0.2vw;
     border-radius: 0.2vw;
     font-size: 1.5vh;
@@ -150,11 +114,6 @@ body {
 
 .lee__input:focus {
     outline: none;
-    border: 0.1vw solid #555555;
-}
-
-.lee__input__disabled {
-    background-color: #dddddd;;
 }
 
 .lee__flex__container {

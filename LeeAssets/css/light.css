@@ -1,0 +1,62 @@
+.lee__selection::selection {
+    background-color: #8d8d8d;
+}
+
+.lee__container {
+    border: 0.1vw solid #c9c9c9;
+    background: #c9c9c9;
+}
+
+.lee__chatlog__container {
+    background: #ffffff;
+}
+
+.lee__chatlog__container::-webkit-scrollbar-thumb {
+    background-color: #c4c4c4;
+    border: 5px solid #ffffff;
+}
+
+.lee__chatlog__container::-webkit-scrollbar-thumb:hover {
+    background-color: #afafaf;
+}
+
+.lee__search__highlight {
+    background: #ffbd72 !important; /* using !important for overwriting other background values */
+}
+
+.lee__error__message {
+    color: #ff0000;
+}
+
+.lee__debug__message {
+    color: #5ead2a;
+}
+
+.lee__self__message__container {
+    background: #56668348;
+}
+
+.lee__user__message__container {
+    background: #e6e5e55b;
+}
+
+.lee__footer__container {
+    background: #c9c9c9;
+}
+
+.lee__github__container {
+    border-right: 0.1vw solid #7c7c7c73;
+}
+
+.lee__input {
+    border: 0.1vw solid #aaaaaa;
+    background: #ffffff;
+}
+
+.lee__input:focus {
+    border: 0.1vw solid #555555;
+}
+
+.lee__input__disabled {
+    background-color: #dddddd;;
+}
