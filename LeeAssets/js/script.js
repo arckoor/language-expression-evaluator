@@ -22,10 +22,16 @@ const LEE_config = {
 	initMsg: null,
 	initMsgDelay: null,
 	attributes: null,
-	undefinedMessage: null
+	undefinedMessage: null,
+	weights: {
+		segmentPower: 1,
+		distanceMultiplier: 1,
+		partMultiplier: 1
+	}
 };
 let LEE_responses;
 let LEE_matches = {};
+let LEE_segments = {};
 let LEE_history = [];
 let LEE_history_index = 0;
 
@@ -34,6 +40,7 @@ LEE_lock_wrapper(LEE);
 async function LEE() {
 	await LEE_load_config();
 	LEE_sanitize_data();
+	LEE_create_weights();
 	LEE_set_equal_name_length();
 	if (LEE_config.initMsg !== undefined && LEE_config.initMsg !== null) {
 		await LEE_construct_message(LEE_config.leeName, LEE_config.initMsg, LEE_config.initMsgDelay);
@@ -115,6 +122,25 @@ function LEE_sanitize_data() {
 	}
 }
 
+function LEE_create_weights() {
+	for (const key in LEE_matches) {
+		for (let part of key.split(" ")) {
+			part = LEE_remove_symbols(part);
+			if (!LEE_segments[part]) {
+				LEE_segments[part] = 1;
+			} else {
+				LEE_segments[part] += 1;
+			}
+		}
+	}
+}
+
+function LEE_remove_symbols(str) {
+	str = str.replace(/[^a-zA-Z0-9 ]/g, ""); // ^ inverts everything, then select everything from a-z, A-Z, and 0-9, /g is for all occurences
+	// replace everything that is not alphabetic, a number or a whitespace
+	return str;
+}
+
 function LEE_index_from_string(data, responseKey) {
 	if (!responseKey) {
 		return undefined;
@@ -190,26 +216,30 @@ async function LEE_reply_from_key(key, previousKey = null) {
 
 function LEE_calculate_cost(key, input) {
 	const LEE_distance = LEE_levenshtein(key, input);
-	let LEE_long = key.split(" ");
-	let LEE_short = input.split(" ");
+	let LEE_key_segments = LEE_remove_symbols(key).split(" ");
+	let LEE_input_sements = LEE_remove_symbols(input).split(" ");
+	let LEE_part_to_remove = null;
 
-	if (LEE_short.length > LEE_long.length) {
-		let tmp = LEE_short;
-		LEE_short = LEE_long;
-		LEE_long = tmp;
-	}
 	let LEE_combined_part_distance = 0;
-	for (const partK of LEE_long) {
+	for (const partInput of LEE_input_sements) {
 		let LEE_lowest_part_distance = null;
-		for (const partI of LEE_short) {
-			let LEE_part_distance = LEE_levenshtein(partK, partI);
+		for (const partKey of LEE_key_segments) {
+			let LEE_part_distance = LEE_levenshtein(partInput, partKey);
 			if (LEE_lowest_part_distance === null || LEE_part_distance < LEE_lowest_part_distance) {
 				LEE_lowest_part_distance = LEE_part_distance;
+				LEE_part_to_remove = partKey;
 			}
 		}
-		LEE_combined_part_distance += LEE_lowest_part_distance;
+		if (LEE_key_segments.length > 1) {
+			LEE_key_segments.splice(LEE_key_segments.indexOf(LEE_part_to_remove), 1);
+		}
+		let LEE_multiplier = 1;
+		if (LEE_segments[partInput]) {
+			LEE_multiplier = 1 / (LEE_segments[partInput] ** LEE_config.weights.segmentPower);
+		}
+		LEE_combined_part_distance += LEE_lowest_part_distance * LEE_multiplier;
 	}
-	return LEE_combined_part_distance + LEE_distance;
+	return LEE_combined_part_distance * LEE_config.weights.partMultiplier + LEE_distance * LEE_config.weights.distanceMultiplier;
 }
 
 function LEE_calculate_match(input) {
