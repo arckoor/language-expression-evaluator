@@ -343,8 +343,10 @@ function LEE_input_listener(event) {
 	if (event.code === "Enter") {
 		LEE_lock_wrapper(LEE_get_input);
 	} else if (event.code === "ArrowUp") {
+		event.preventDefault();
 		LEE_set_from_history(1);
 	} else if (event.code === "ArrowDown") {
+		event.preventDefault();
 		LEE_set_from_history(-1);
 	}
 }
@@ -384,6 +386,7 @@ function LEE_set_from_history(index) {
 	if (LEE_history[LEE_history_index]) {
 		LEE_input.value = LEE_history[LEE_history_index];
 	}
+	LEE_input.setSelectionRange(LEE_input.value.length, LEE_input.value.length);
 }
 
 async function LEE_construct_message(from, message, delay = 0) {
