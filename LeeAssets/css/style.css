@@ -19,13 +19,13 @@ body {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    width: 80vw; /* 50vw */
-    height: 80vh; /* 50vh */
+    width: 50vw;
+    height: 50vh;
     border-radius: 1vh;
 }
 
 .lee__chatlog__container {
-    height: 96.5%; /* 94% */
+    height: 94%;
     overflow: auto;
     scroll-behavior: smooth;
 }

@@ -1,4 +1,11 @@
-.lee__selection::selection {
+/*
+title: ::selection not working correctly on line break
+author: s.kuznetsov
+date: 20.03.2022
+source: https://stackoverflow.com/a/71545953/12203337
+*/
+.lee__selection::selection,
+.lee__selection *::selection {
     background-color: #8d8d8d;
 }
 
