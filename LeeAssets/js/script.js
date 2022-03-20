@@ -16,21 +16,7 @@ const LEE_css_selectors = {
 	selection: "lee__selection",
 };
 const LEE_config_file_name = "./LeeAssets/config/LeeConfig.json";
-const LEE_config = {
-	leeName: null,
-	userName: null,
-	debugName: null,
-	initMsg: null,
-	initMsgDelay: null,
-	attributes: null,
-	undefinedMessage: null,
-	enableCommands: null,
-	weights: {
-		segmentPower: 1,
-		distanceMultiplier: 1,
-		partMultiplier: 1
-	}
-};
+const LEE_config = {};
 const LEE_commands = ["!commands", "!clear", "!reinit", "!search"];
 let LEE_responses;
 let LEE_matches = {};
@@ -53,7 +39,7 @@ async function LEE() {
 async function LEE_load_config() {
 	let LEE_data;
 	LEE_data = await ( await fetch(LEE_config_file_name) ).json();
-	for (const key in LEE_config) {
+	for (const key in LEE_data.config) {
 		LEE_config[key] = LEE_data.config[key];
 	}
 	LEE_responses = LEE_data.rules;
