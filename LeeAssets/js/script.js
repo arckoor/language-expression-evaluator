@@ -327,7 +327,7 @@ async function LEE_get_input() {
 	}
 	if (LEE_reply) {
 		if (LEE_delay === undefined || LEE_delay === null) {
-			LEE_delay = LEE_randint(300, 500);
+			LEE_delay = LEE_randint(LEE_config.randomIntervall[0], LEE_config.randomIntervall[1]);
 		}
 		await LEE_construct_message(LEE_config.leeName, LEE_reply, LEE_delay);
 	}
