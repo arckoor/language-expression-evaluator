@@ -31,7 +31,7 @@ const LEE_config = {
 		partMultiplier: 1
 	}
 };
-const LEE_commands = ["!clear", "!reinit", "!search"];
+const LEE_commands = ["!commands", "!clear", "!reinit", "!search"];
 let LEE_responses;
 let LEE_matches = {};
 let LEE_segments = {};
@@ -279,6 +279,15 @@ function LEE_detect_command(input) {
 function LEE_handle_command(input) {
 	const command = input.split(" ")[0];
 	switch (command) {
+		case "!commands":
+			{
+				let LEE_reply = `!commands       : Shows this explanation
+!clear          : removes all messages from the chatlog
+!reinit         : reloads LeeConfig.json, and resets all parameters to their initial values
+!search <query> : searches every message for the string <query>`;
+				LEE_construct_message(LEE_config.leeName, LEE_reply, 300);
+			}
+			break;
 		case "!clear":
 			LEE_chatlog_container.innerHTML = "";
 			break;
