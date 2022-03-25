@@ -6,7 +6,7 @@ const LEE_css_selectors = {
 	lock:  "lee__input__disabled",
 	chatlog_msg_container: "lee__chatlog__message__container",
 	usr_msg_container: "lee__user__message__container",
-	self_msg_contaimer: "lee__self__message__container",
+	self_msg_container: "lee__self__message__container",
 	msg_identifier: "lee__message__identifier",
 	no_select: "lee__no__select",
 	msg_container: "lee__message__container",
@@ -17,7 +17,7 @@ const LEE_css_selectors = {
 };
 const LEE_config_file_name = "./LeeAssets/config/LeeConfig.json";
 const LEE_config = {};
-const LEE_commands = ["!commands", "!clear", "!reinit", "!search"];
+const LEE_commands = ["!commands", "!help", "!clear", "!reinit", "!search"];
 let LEE_responses;
 let LEE_matches = {};
 let LEE_segments = {};
@@ -37,8 +37,7 @@ async function LEE() {
 }
 
 async function LEE_load_config() {
-	let LEE_data;
-	LEE_data = await ( await fetch(LEE_config_file_name) ).json();
+	const LEE_data = await ( await fetch(LEE_config_file_name) ).json();
 	for (const key in LEE_data.config) {
 		LEE_config[key] = LEE_data.config[key];
 	}
@@ -53,26 +52,20 @@ function LEE_set_equal_name_length() {
 	let LEE_max_name_len = 0;
 	for (const key in LEE_config) { // compute max length of all names
 		if (key.indexOf("Name") !== -1) {
-			if (LEE_config[key]) {
-				if (LEE_config[key].length > LEE_max_name_len) {
-					if (key.indexOf("debug") !== -1) {
-						if (LEE_DEBUG_MODE) { // only include debug if DEBUG_MODE is true, otherwise names could be unnecessarily long
-							LEE_max_name_len = LEE_config[key].length;
-						}
-					} else {
-						LEE_max_name_len = LEE_config[key].length;
-					}
+			if (LEE_config[key].length > LEE_max_name_len) {
+				if (LEE_DEBUG_MODE && key.indexOf("debug") !== -1) { // only include debug if DEBUG_MODE is true, otherwise names could be unnecessarily long
+					LEE_max_name_len = LEE_config[key].length;
+				} else {
+					LEE_max_name_len = LEE_config[key].length;
 				}
 			}
 		}
 	}
 	for (const key in LEE_config) { // set all to equal max length
 		if (key.indexOf("Name") !== -1) {
-			if (LEE_config[key]) {
-				const LEE_length_diff = Math.abs(LEE_max_name_len - LEE_config[key].length); // get difference between max and name length
-				for (let i = 0; i < LEE_length_diff; i++) {
-					LEE_config[key] += String.fromCharCode(160); // &nbsp;
-				}
+			const LEE_length_diff = Math.abs(LEE_max_name_len - LEE_config[key].length); // get difference between max and name length
+			for (let i = 0; i < LEE_length_diff; i++) {
+				LEE_config[key] += String.fromCharCode(160); // &nbsp;
 			}
 		}
 	}
@@ -86,7 +79,7 @@ function LEE_sanitize_data() {
 					LEE_responses[topic][rule][key] = key === "counter" ? 0 : null;
 				}
 			}
-			// transform to array to make indexing, counting and refering easier
+			// transform to array to make indexing, counting and referring easier
 			if (typeof(LEE_responses[topic][rule]["match"]) === "string") {
 				LEE_responses[topic][rule]["match"] = [LEE_responses[topic][rule]["match"]];
 			}
@@ -125,8 +118,7 @@ function LEE_create_weights() {
 }
 
 function LEE_remove_symbols(str) {
-	str = str.replace(/[^a-zA-Z0-9 ]/g, ""); // ^ inverts everything, then select everything from a-z, A-Z, and 0-9, /g is for all occurences
-	// replace everything that is not alphabetic, a number or a whitespace
+	str = str.replace(/[^a-zA-Z0-9 ]/g, ""); // select everything a-z A-Z 0-9 and whitespace, ^ inverts everything -> removes everything not in the previously selected, /g is for all occurrences
 	return str;
 }
 
@@ -134,7 +126,9 @@ function LEE_index_from_string(data, responseKey) {
 	if (!responseKey) {
 		return undefined;
 	}
-	responseKey = responseKey.replace("rules.", "");
+	if (responseKey.indexOf("rules.") === 0) {
+		responseKey = responseKey.replace("rules.", "");
+	}
 	const LEE_subkeys = responseKey.split(".");
 	let LEE_current_object = data;
 	for (const key of LEE_subkeys) {
@@ -158,8 +152,8 @@ async function LEE_reply_from_key(key, previousKey = null) {
 		if (LEE_cr["response"] === null && LEE_cr["ref"] !== null) {
 			LEE_skip = true; // no response(s), but there is a ref so immediately go there and skip everything else
 		}
-		if (LEE_cr["response"] !== null || LEE_skip) {
-			if (!LEE_skip && LEE_cr["random"]) { // pick a random reponse
+		if (LEE_skip || LEE_cr["response"] !== null) {
+			if (!LEE_skip && LEE_cr["random"]) { // pick a random response
 				const LEE_random_index = LEE_randint(0, LEE_cr["response"].length - 1);
 				LEE_reply = LEE_cr["response"][LEE_random_index];
 			} else {
@@ -169,7 +163,7 @@ async function LEE_reply_from_key(key, previousKey = null) {
 				} else {
 					if (LEE_cr["ref"] !== null) { // at the end of the array, if there is a ref redirect there
 						let LEE_new_key = LEE_cr["ref"];
-						if (LEE_new_key.indexOf("this") !== -1) { // if in the same subkey, take the original key, remove the lowest level key and then append everything after "this."
+						if (LEE_new_key.indexOf("this.") !== -1) { // if in the same subkey, take the original key, remove the lowest level key and then append everything after "this."
 							LEE_new_key = key.substring(0, key.lastIndexOf(".") + 1) + LEE_new_key.replace("this.", "");
 						}
 						if (previousKey === key) { // would recurse until infinity (or until the stack runs out of space)
@@ -206,11 +200,11 @@ async function LEE_reply_from_key(key, previousKey = null) {
 function LEE_calculate_cost(key, input) {
 	const LEE_distance = LEE_levenshtein(key, input);
 	let LEE_key_segments = LEE_remove_symbols(key).split(" ");
-	let LEE_input_sements = LEE_remove_symbols(input).split(" ");
+	let LEE_input_segments = LEE_remove_symbols(input).split(" ");
 	let LEE_part_to_remove = null;
 
 	let LEE_combined_part_distance = 0;
-	for (const partInput of LEE_input_sements) {
+	for (const partInput of LEE_input_segments) {
 		let LEE_lowest_part_distance = null;
 		for (const partKey of LEE_key_segments) {
 			let LEE_part_distance = LEE_levenshtein(partInput, partKey);
@@ -247,7 +241,7 @@ function LEE_calculate_match(input) {
 			return LEE_best_key;
 		}
 	}
-	if (input.length * 1.20 < LEE_cost) {
+	if (input.length * LEE_config.errorMargin < LEE_cost) {
 		return null;
 	}
 	return LEE_best_key;
@@ -265,6 +259,7 @@ function LEE_detect_command(input) {
 function LEE_handle_command(input) {
 	const command = input.split(" ")[0];
 	switch (command) {
+		case "!help":
 		case "!commands":
 			{
 				let LEE_reply = `!commands       : Shows this explanation
@@ -292,10 +287,10 @@ function LEE_handle_command(input) {
 				for (const child of LEE_chatlog_container.children) {
 					child.classList.remove(LEE_css_selectors.search); // remove from everything
 				}
-				let LEE_search_query = input.replace("!search", "").trim();
+				let LEE_search_query = input.replace("!search", "").trim().toLowerCase();
 				let LEE_children = Array.from(LEE_chatlog_container.children);
 				LEE_children.forEach ((child, index) => {
-					if (child.innerText.indexOf(LEE_search_query) !== -1 && index !== LEE_children.length - 1) { // only if innerText contains the search query and it is not the search query itself
+					if (child.innerText.toLowerCase().indexOf(LEE_search_query) !== -1 && index !== LEE_children.length - 1) { // only if innerText contains the search query and it is not the search query itself
 						child.classList.add(LEE_css_selectors.search);
 					}
 				});
@@ -327,7 +322,7 @@ async function LEE_get_input() {
 	}
 	if (LEE_reply) {
 		if (LEE_delay === undefined || LEE_delay === null) {
-			LEE_delay = LEE_randint(LEE_config.randomIntervall[0], LEE_config.randomIntervall[1]);
+			LEE_delay = LEE_randint(LEE_config.randomInterval[0], LEE_config.randomInterval[1]);
 		}
 		await LEE_construct_message(LEE_config.leeName, LEE_reply, LEE_delay);
 	}
@@ -349,7 +344,7 @@ function LEE_input_listener(event) {
 LEE_input.addEventListener("keydown", LEE_input_listener);
 
 function LEE_sanitize_input(message, lower = true) {
-	message = message.trim(); // remove trailing and preceeding spaces
+	message = message.trim(); // remove trailing and preceding spaces
 	/*
 	title: Remove all multiple spaces in Javascript and replace with single space [duplicate]
 	author: Greg Shackles
@@ -394,7 +389,7 @@ async function LEE_construct_message(from, message, delay = 0) {
 	}
 	LEE_chatlog_msg_container.appendChild(LEE_msg_container);
 
-	LEE_chatlog_msg_container.classList = LEE_css_selectors.chatlog_msg_container + " " + (LEE_from_user ? LEE_css_selectors.usr_msg_container : LEE_css_selectors.self_msg_contaimer);
+	LEE_chatlog_msg_container.classList = LEE_css_selectors.chatlog_msg_container + " " + (LEE_from_user ? LEE_css_selectors.usr_msg_container : LEE_css_selectors.self_msg_container);
 
 	LEE_msg_identifier.classList = LEE_css_selectors.msg_identifier + " " + LEE_css_selectors.no_select;
 	LEE_msg_identifier.innerText = from;
