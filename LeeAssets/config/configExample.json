@@ -1,0 +1,52 @@
+{
+    "config" : {
+        "leeName" : "LEE:",
+        "userName" : "User:",
+        "debugName" : "[DEBUG]:",
+        "initMsg" : "Hi! My name is Lee and I have some cool functionality. Use !commands to show special actions.",
+        "initMsgDelay" : 300,
+        "attributes" : ["match", "response", "ref", "random", "delay", "counter"],
+        "undefinedMessage" : "I unfortunately do not understand you.",
+        "enableCommands" : true,
+        "randomInterval" : [300, 500],
+        "errorMargin" : 1.2,
+        "weights" : {
+            "segmentPower" : 2,
+            "distanceMultiplier" : 1,
+            "partMultiplier" : 1.5
+        }
+    },
+    "rules": {
+        "exampleCategory" : {
+            "exampleRule" : {
+                "match" : "Example match",
+                "response" : "Example response",
+                "delay" : 0,
+                "random" : false,
+                "ref" : null
+            },
+            "arrayMatchAndResponse" : {
+                "match" : ["array", "array match", "array response"],
+                "response" : ["I", "have", "multiple", "responses"]
+            },
+            "randomResponse" : {
+                "match" : ["random", "randomness", "random answer"],
+                "response" : ["1", "2", "3"],
+                "random" : true
+            },
+            "originResponse" : {
+                "match" : ["refer", "origin"],
+                "response" : ["Repeat your input to get referred."],
+                "ref" : "this.referredResponse"
+            },
+            "referredResponse" : {
+                "response" : ["You have been referred!"]
+            },
+            "delayedResponse" : {
+                "match" : ["delay", "delayed response"],
+                "response" : ["This response is very delayed."],
+                "delay" : 5000
+            }
+        }
+    }
+}
