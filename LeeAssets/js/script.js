@@ -37,7 +37,14 @@ async function LEE() {
 }
 
 async function LEE_load_config() {
-	const LEE_data = await ( await fetch(LEE_config_file_name) ).json();
+	let LEE_data;
+	try {
+		LEE_data = await ( await fetch(LEE_config_file_name) ).json();
+	} catch (error) {
+		LEE_config.debugName = "[DEBUG]: ";
+		LEE_print_debug_error(`Error while parsing ${LEE_config_file_name}:\n${error}.\nExecution halted.`);
+		throw error;
+	}
 	for (const key in LEE_data.config) {
 		LEE_config[key] = LEE_data.config[key];
 	}
@@ -53,10 +60,12 @@ function LEE_set_equal_name_length() {
 	for (const key in LEE_config) { // compute max length of all names
 		if (key.indexOf("Name") !== -1) {
 			if (LEE_config[key].length > LEE_max_name_len) {
-				if (LEE_DEBUG_MODE && key.indexOf("debug") !== -1) { // only include debug if DEBUG_MODE is true, otherwise names could be unnecessarily long
-					LEE_max_name_len = LEE_config[key].length;
+				if (key.indexOf("debug") !== -1) { // only include debug if DEBUG_MODE is true, otherwise names could be unnecessarily long
+					if (LEE_DEBUG_MODE) {
+						LEE_max_name_len = LEE_config[key].length + 1;
+					}
 				} else {
-					LEE_max_name_len = LEE_config[key].length;
+					LEE_max_name_len = LEE_config[key].length + 2;
 				}
 			}
 		}
@@ -90,12 +99,13 @@ function LEE_sanitize_data() {
 				const LEE_match = LEE_responses[topic][rule]["match"];
 				const LEE_match_key = `${topic}.${rule}`;
 				for (let match of LEE_match) {
+					let original_match = match;
 					match = match.toLowerCase();
 					if (!LEE_matches[match]) {
 						LEE_matches[match] = LEE_match_key;
 					} else {
 						if (LEE_DEBUG_MODE) {
-							LEE_print_debug_error(`Match "${match}" of ${LEE_match_key} is already used in ${LEE_matches[match]}`);
+							LEE_print_debug_error(`Match "${original_match}" of ${LEE_match_key} is already used in ${LEE_matches[match]}`);
 						}
 					}
 				}
