@@ -7,7 +7,7 @@ Copy `./LeeAssets/` and `LICENSE` to the directory that contains the `.html` fil
 If you use the included CSS files, you will likely need to adjust the positioning of the `container` in `style.css`.
 
 ## Running
-This bot uses the `fetch` API and as such cannot be fun using the `file` protocol. It requires some kind of server to operate, for example the [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) extension for VS Code.
+This bot uses the `fetch` API and as such cannot run be using the `file` protocol. It requires some kind of server to operate, for example the [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) extension for VS Code.
 
 ## Configuration
 To change the behavior of the bot you need to modify [`./LeeAssets/config/LeeConfig.json`](./LeeAssets/config/LeeConfig.json). An example config file can found at [`./LeeAssets/config/configExample.json`](./LeeAssets/config/configExample.json).
