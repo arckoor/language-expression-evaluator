@@ -27,6 +27,12 @@ source: https://stackoverflow.com/a/71545953/12203337
     background-color: #afafaf;
 }
 
+.lee__message__container a:hover,
+.lee__message__container a:visited,
+.lee__message__container a:focus {
+    color: #11cae2;
+}
+
 .lee__search__highlight {
     background: #ffbd72 !important; /* using !important for overwriting other background values */
 }

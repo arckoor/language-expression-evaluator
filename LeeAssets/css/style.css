@@ -76,9 +76,10 @@ body {
     height: 1vh;
     padding: 1vh;
     margin-right: 0.3vw;
-    font-size: calc(0.6vw + 2px);
+    font-size: calc(6px + 0.6vw);
 }
 
+.lee__message__container a,
 .lee__github__container a,
 .lee__github__container a:hover,
 .lee__github__container a:visited,
@@ -107,7 +108,7 @@ body {
     height: 2vh;
     margin: 0.075vh 0.6vw 0 0.2vw;
     border-radius: 0.2vw;
-    font-size: calc(0.7vw + 4px);
+    font-size: calc(8px + 0.7vw);
     transition: border 0.5s;
     font-family: "Consolas";
 }

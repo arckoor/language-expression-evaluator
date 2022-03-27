@@ -5,7 +5,7 @@
         "debugName" : "[DEBUG]:",
         "initMsg" : "Hi! My name is Lee and I have some cool functionality. Use !commands to show special actions.",
         "initMsgDelay" : 300,
-        "attributes" : ["match", "response", "ref", "random", "delay", "counter"],
+        "attributes" : ["match", "response", "ref", "random", "delay", "counter", "encode"],
         "undefinedMessage" : "I unfortunately do not understand you.",
         "enableCommands" : true,
         "randomInterval" : [300, 500],
@@ -23,7 +23,8 @@
                 "response" : "Example response",
                 "delay" : 0,
                 "random" : false,
-                "ref" : null
+                "ref" : null,
+                "encode" : false
             },
             "arrayMatchAndResponse" : {
                 "match" : ["array", "array match", "array response"],
@@ -46,6 +47,11 @@
                 "match" : ["delay", "delayed response"],
                 "response" : ["This response is very delayed."],
                 "delay" : 5000
+            },
+            "encodedResponse" : {
+                "match" : ["link", "encode"],
+                "response" : ["This response is encoded to produce <a target=\"_blank\" href=\"https://github.com/arckoor/Language-Expression-Evaluator\">this</a> link."],
+                "encode" : true
             }
         }
     }

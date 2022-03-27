@@ -42,7 +42,7 @@ async function LEE_load_config() {
 		LEE_data = await ( await fetch(LEE_config_file_name) ).json();
 	} catch (error) {
 		LEE_config.debugName = "[DEBUG]: ";
-		LEE_print_debug_error(`Error while parsing ${LEE_config_file_name}:\n${error}.\nExecution halted.`);
+		LEE_print_debug_error(`Error while reading ${LEE_config_file_name}:\n${error}.\nExecution halted.`);
 		throw error;
 	}
 	for (const key in LEE_data.config) {
@@ -85,7 +85,16 @@ function LEE_sanitize_data() {
 		for (const rule in LEE_responses[topic]) {
 			for (const key of LEE_config.attributes) {
 				if (!(key in LEE_responses[topic][rule])) {
-					LEE_responses[topic][rule][key] = key === "counter" ? 0 : null;
+					let LEE_default = null;
+					switch(key) {
+						case "counter":
+							LEE_default = 0;
+							break;
+						case "random":
+						case "encode":
+							LEE_default = false;
+					}
+					LEE_responses[topic][rule][key] = LEE_default;
 				}
 			}
 			// transform to array to make indexing, counting and referring easier
@@ -128,8 +137,7 @@ function LEE_create_weights() {
 }
 
 function LEE_remove_symbols(str) {
-	str = str.replace(/[^a-zA-Z0-9 ]/g, ""); // select everything a-z A-Z 0-9 and whitespace, ^ inverts everything -> removes everything not in the previously selected, /g is for all occurrences
-	return str;
+	return str.replace(/[^a-zA-Z0-9 ]/g, ""); // select everything a-z A-Z 0-9 and whitespace, ^ inverts everything -> removes everything not in the previously selected, /g is for all occurrences
 }
 
 function LEE_index_from_string(data, responseKey) {
@@ -194,7 +202,7 @@ async function LEE_reply_from_key(key, previousKey = null) {
 		}
 
 		if (LEE_reply !== null) {
-			return [LEE_reply, LEE_cr["delay"]];
+			return [LEE_reply, LEE_cr["delay"], LEE_cr["encode"]];
 		}
 		if (LEE_DEBUG_MODE) {
 			let LEE_prevkey_addition = "";
@@ -272,9 +280,9 @@ function LEE_handle_command(input) {
 		case "!help":
 		case "!commands":
 			{
-				let LEE_reply = `!commands       : Shows this explanation
+				let LEE_reply = `!commands       : shows this explanation
 !clear          : removes all messages from the chatlog
-!reinit         : reloads LeeConfig.json, and resets all parameters to their initial values
+!reinit         : reloads LeeConfig.json and resets all parameters to their initial values
 !search <query> : searches every message for the string <query>`;
 				LEE_construct_message(LEE_config.leeName, LEE_reply, 300);
 			}
@@ -327,6 +335,7 @@ async function LEE_get_input() {
 	const LEE_results = await LEE_reply_from_key(LEE_best_match);
 	let LEE_reply = LEE_results[0];
 	let LEE_delay = LEE_results[1];
+	let LEE_encode = LEE_results[2];
 	if (LEE_reply === undefined && LEE_config.undefinedMessage !== null) {
 		LEE_reply = LEE_config.undefinedMessage;
 	}
@@ -334,7 +343,7 @@ async function LEE_get_input() {
 		if (LEE_delay === undefined || LEE_delay === null) {
 			LEE_delay = LEE_randint(LEE_config.randomInterval[0], LEE_config.randomInterval[1]);
 		}
-		await LEE_construct_message(LEE_config.leeName, LEE_reply, LEE_delay);
+		await LEE_construct_message(LEE_config.leeName, LEE_reply, LEE_delay, LEE_encode);
 	}
 	LEE_scroll_down();
 }
@@ -389,7 +398,7 @@ function LEE_set_from_history(index) {
 	LEE_input.setSelectionRange(LEE_input.value.length, LEE_input.value.length);
 }
 
-async function LEE_construct_message(from, message, delay = 0) {
+async function LEE_construct_message(from, message, delay = 0, encode = false) {
 	const LEE_from_user = from === LEE_config.userName;
 	const LEE_chatlog_msg_container = document.createElement("div");
 	const LEE_msg_identifier = document.createElement("div");
@@ -405,7 +414,11 @@ async function LEE_construct_message(from, message, delay = 0) {
 	LEE_msg_identifier.innerText = from;
 
 	LEE_msg_container.classList = LEE_css_selectors.msg_container + " " + LEE_css_selectors.selection;
-	LEE_msg_container.innerText = message;
+	if (encode) {
+		LEE_msg_container.innerHTML = message;
+	} else {
+		LEE_msg_container.innerText = message;
+	}
 
 	await LEE_sleep(delay);
 	LEE_chatlog_container.appendChild(LEE_chatlog_msg_container);
