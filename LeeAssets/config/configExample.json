@@ -7,9 +7,9 @@
         "initMsgDelay" : 300,
         "attributes" : ["match", "response", "ref", "random", "delay", "counter", "encode"],
         "undefinedMessage" : "I unfortunately do not understand you.",
+        "errorMargin" : 1.2,
         "enableCommands" : true,
         "randomInterval" : [300, 500],
-        "errorMargin" : 1.2,
         "weights" : {
             "segmentPower" : 2,
             "distanceMultiplier" : 1,

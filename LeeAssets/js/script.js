@@ -216,6 +216,8 @@ async function LEE_reply_from_key(key, previousKey = null) {
 }
 
 function LEE_calculate_cost(key, input) {
+	key = key.toLowerCase();
+	input = input.toLowerCase();
 	const LEE_distance = LEE_levenshtein(key, input);
 	let LEE_key_segments = LEE_remove_symbols(key).split(" ");
 	let LEE_input_segments = LEE_remove_symbols(input).split(" ");
@@ -247,7 +249,7 @@ function LEE_calculate_match(input) {
 	let LEE_cost = null;
 	let LEE_best_key = null;
 	for (const key in LEE_matches) {
-		let LEE_new_cost = LEE_calculate_cost(key.toLowerCase(), input);
+		let LEE_new_cost = LEE_calculate_cost(key, input);
 		if (LEE_cost === null || LEE_new_cost < LEE_cost) {
 			LEE_cost = LEE_new_cost;
 			LEE_best_key = LEE_matches[key];
