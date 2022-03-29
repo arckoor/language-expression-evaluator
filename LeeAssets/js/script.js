@@ -86,13 +86,14 @@ function LEE_sanitize_data() {
 			for (const key of LEE_config.attributes) {
 				if (!(key in LEE_responses[topic][rule])) {
 					let LEE_default = null;
-					switch(key) {
+					switch(key) { // initialize non-existent keys
 						case "counter":
 							LEE_default = 0;
 							break;
 						case "random":
 						case "encode":
 							LEE_default = false;
+							break;
 					}
 					LEE_responses[topic][rule][key] = LEE_default;
 				}
@@ -104,7 +105,7 @@ function LEE_sanitize_data() {
 			if (typeof(LEE_responses[topic][rule]["response"]) === "string") {
 				LEE_responses[topic][rule]["response"] = [LEE_responses[topic][rule]["response"]];
 			}
-			if (LEE_responses[topic][rule]["match"]) {
+			if (LEE_responses[topic][rule]["match"]) { // construct rule to key mapping
 				const LEE_match = LEE_responses[topic][rule]["match"];
 				const LEE_match_key = `${topic}.${rule}`;
 				for (let match of LEE_match) {
@@ -127,7 +128,7 @@ function LEE_create_weights() {
 	for (const key in LEE_matches) {
 		for (let part of key.split(" ")) {
 			part = LEE_remove_symbols(part);
-			if (!LEE_segments[part]) {
+			if (!LEE_segments[part]) { // count occurrences
 				LEE_segments[part] = 1;
 			} else {
 				LEE_segments[part] += 1;
@@ -151,11 +152,11 @@ function LEE_index_from_string(data, responseKey) {
 	let LEE_current_object = data;
 	for (const key of LEE_subkeys) {
 		if (LEE_current_object) {
-			LEE_current_object = LEE_current_object[key];
+			LEE_current_object = LEE_current_object[key]; // resolve key
 		} else {
 			if (LEE_DEBUG_MODE) {
 				LEE_print_debug_error(`Key "${responseKey}" does not exist.`);
-				return undefined;
+				return undefined; // the supplied key does not exist, return undefined and let calling function handle
 			}
 		}
 	}
@@ -205,7 +206,7 @@ async function LEE_reply_from_key(key, previousKey = null) {
 			return [LEE_reply, LEE_cr["delay"], LEE_cr["encode"]];
 		}
 		if (LEE_DEBUG_MODE) {
-			let LEE_prevkey_addition = "";
+			let LEE_prevkey_addition = ""; // used when the key is recursive
 			if (previousKey) {
 				LEE_prevkey_addition = `\n\nFrom Key: ${previousKey} : ${LEE_pretty_JSON(LEE_index_from_string(LEE_responses, previousKey))}`;
 			}
@@ -224,7 +225,7 @@ function LEE_calculate_cost(key, input) {
 	let LEE_part_to_remove = null;
 
 	let LEE_combined_part_distance = 0;
-	for (const partInput of LEE_input_segments) {
+	for (const partInput of LEE_input_segments) { // match each input segment to the closest rule segment
 		let LEE_lowest_part_distance = null;
 		for (const partKey of LEE_key_segments) {
 			let LEE_part_distance = LEE_levenshtein(partInput, partKey);
@@ -234,11 +235,11 @@ function LEE_calculate_cost(key, input) {
 			}
 		}
 		if (LEE_key_segments.length > 1) {
-			LEE_key_segments.splice(LEE_key_segments.indexOf(LEE_part_to_remove), 1);
+			LEE_key_segments.splice(LEE_key_segments.indexOf(LEE_part_to_remove), 1); // remove the closest match so it doesn't get used again
 		}
 		let LEE_multiplier = 1;
 		if (LEE_segments[partInput]) {
-			LEE_multiplier = 1 / (LEE_segments[partInput] ** LEE_config.weights.segmentPower);
+			LEE_multiplier = 1 / (LEE_segments[partInput] ** LEE_config.weights.segmentPower); // this number decreases with number of occurrences of a given word
 		}
 		LEE_combined_part_distance += LEE_lowest_part_distance * LEE_multiplier;
 	}
@@ -249,19 +250,19 @@ function LEE_calculate_match(input) {
 	let LEE_cost = null;
 	let LEE_best_key = null;
 	for (const key in LEE_matches) {
-		let LEE_new_cost = LEE_calculate_cost(key, input);
-		if (LEE_cost === null || LEE_new_cost < LEE_cost) {
+		let LEE_new_cost = LEE_calculate_cost(key, input); // iterate through every key
+		if (LEE_cost === null || LEE_new_cost < LEE_cost) { // only set it new cost is less than previous best cost
 			LEE_cost = LEE_new_cost;
 			LEE_best_key = LEE_matches[key];
 			if (LEE_DEBUG_MODE) {
 				LEE_print_debug_error(`Best cost is ${LEE_cost} with key "${key}" from rule ${LEE_matches[key]}`, LEE_css_selectors.debug);
 			}
 		}
-		if (LEE_cost === 0) {
+		if (LEE_cost === 0) { // exact match, short-circuit
 			return LEE_best_key;
 		}
 	}
-	if (input.length * LEE_config.errorMargin < LEE_cost) {
+	if (input.length * LEE_config.errorMargin < LEE_cost) { // too many edits to be made with levenshtein algorithm, likely not a close match
 		return null;
 	}
 	return LEE_best_key;
@@ -281,7 +282,7 @@ function LEE_handle_command(input) {
 	switch (command) {
 		case "!help":
 		case "!commands":
-			{
+			{ // wrap in { } to not expose variables to switch statement
 				let LEE_reply = `!commands       : shows this explanation
 !clear          : removes all messages from the chatlog
 !reinit         : reloads LeeConfig.json and resets all parameters to their initial values
@@ -324,13 +325,12 @@ async function LEE_get_input() {
 	LEE_add_to_history(LEE_user_input);
 	LEE_input.value = null;
 	let LEE_treated_input = LEE_sanitize_input(LEE_user_input);
-	let LEE_command_input = LEE_sanitize_input(LEE_user_input, false);
 	if (LEE_treated_input === "" || LEE_treated_input === " ") {
 		return;
 	}
-	await LEE_construct_message(LEE_config.userName, LEE_user_input);
-	if (LEE_config.enableCommands && LEE_detect_command(LEE_command_input)) {
-		LEE_handle_command(LEE_command_input);
+	await LEE_construct_message(LEE_config.userName, LEE_user_input); // show what user typed
+	if (LEE_config.enableCommands && LEE_detect_command(LEE_treated_input)) {
+		LEE_handle_command(LEE_treated_input);
 		return;
 	}
 	const LEE_best_match = LEE_calculate_match(LEE_treated_input);
@@ -354,7 +354,7 @@ function LEE_input_listener(event) {
 	if (event.code === "Enter") {
 		LEE_lock_wrapper(LEE_get_input);
 	} else if (event.code === "ArrowUp") {
-		event.preventDefault();
+		event.preventDefault(); // would move caret to the left
 		LEE_set_from_history(1);
 	} else if (event.code === "ArrowDown") {
 		event.preventDefault();
@@ -401,6 +401,7 @@ function LEE_set_from_history(index) {
 }
 
 async function LEE_construct_message(from, message, delay = 0, encode = false) {
+	if (!message) { return; }
 	const LEE_from_user = from === LEE_config.userName;
 	const LEE_chatlog_msg_container = document.createElement("div");
 	const LEE_msg_identifier = document.createElement("div");
@@ -411,12 +412,12 @@ async function LEE_construct_message(from, message, delay = 0, encode = false) {
 	LEE_chatlog_msg_container.appendChild(LEE_msg_container);
 
 	LEE_chatlog_msg_container.classList = LEE_css_selectors.chatlog_msg_container + " " + (LEE_from_user ? LEE_css_selectors.usr_msg_container : LEE_css_selectors.self_msg_container);
-
+	// if from user use user background color else use lee background color
 	LEE_msg_identifier.classList = LEE_css_selectors.msg_identifier + " " + LEE_css_selectors.no_select;
 	LEE_msg_identifier.innerText = from;
 
 	LEE_msg_container.classList = LEE_css_selectors.msg_container + " " + LEE_css_selectors.selection;
-	if (encode) {
+	if (encode) { // <a> links and other html elements
 		LEE_msg_container.innerHTML = message;
 	} else {
 		LEE_msg_container.innerText = message;
@@ -425,7 +426,7 @@ async function LEE_construct_message(from, message, delay = 0, encode = false) {
 	await LEE_sleep(delay);
 	LEE_chatlog_container.appendChild(LEE_chatlog_msg_container);
 	LEE_scroll_down();
-	return LEE_chatlog_msg_container;
+	return LEE_chatlog_msg_container; // return to potentially apply more styling to the container
 }
 
 function LEE_obtain_lock() {
@@ -441,7 +442,7 @@ function LEE_discard_lock() {
 
 async function LEE_lock_wrapper(func, ...args) {
 	LEE_obtain_lock();
-	await func(...args);
+	await func(...args); // no inputs permitted during function call
 	LEE_discard_lock();
 }
 
