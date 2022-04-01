@@ -141,7 +141,7 @@ function LEE_remove_symbols(str) {
 	return str.replace(/[^a-zA-Z0-9 ]/g, ""); // select everything a-z A-Z 0-9 and whitespace, ^ inverts everything -> removes everything not in the previously selected, /g is for all occurrences
 }
 
-function LEE_index_from_string(data, responseKey) {
+function LEE_index_from_string(responseKey) {
 	if (!responseKey) {
 		return undefined;
 	}
@@ -149,7 +149,7 @@ function LEE_index_from_string(data, responseKey) {
 		responseKey = responseKey.replace("rules.", "");
 	}
 	const LEE_subkeys = responseKey.split(".");
-	let LEE_current_object = data;
+	let LEE_current_object = LEE_responses;
 	for (const key of LEE_subkeys) {
 		if (LEE_current_object) {
 			LEE_current_object = LEE_current_object[key]; // resolve key
@@ -164,7 +164,7 @@ function LEE_index_from_string(data, responseKey) {
 }
 
 async function LEE_reply_from_key(key, previousKey = null) {
-	const LEE_cr = LEE_index_from_string(LEE_responses, key); // cr -> current_response
+	const LEE_cr = LEE_index_from_string(key); // cr -> current_response
 	let LEE_reply = null;
 	let LEE_skip = false;
 	if (LEE_cr !== undefined) {
@@ -187,7 +187,7 @@ async function LEE_reply_from_key(key, previousKey = null) {
 						}
 						if (previousKey === key) { // would recurse until infinity (or until the stack runs out of space)
 							if (LEE_DEBUG_MODE) {
-								LEE_print_debug_error(`Recursion detected:\n${key} ${LEE_pretty_JSON(LEE_index_from_string(LEE_responses, key))}`);
+								LEE_print_debug_error(`Recursion detected:\n${key} ${LEE_pretty_JSON(LEE_index_from_string(key))}`);
 							}
 							return [undefined];
 						}
@@ -208,9 +208,9 @@ async function LEE_reply_from_key(key, previousKey = null) {
 		if (LEE_DEBUG_MODE) {
 			let LEE_prevkey_addition = ""; // used when the key is recursive
 			if (previousKey) {
-				LEE_prevkey_addition = `\n\nFrom Key: ${previousKey} : ${LEE_pretty_JSON(LEE_index_from_string(LEE_responses, previousKey))}`;
+				LEE_prevkey_addition = `\n\nFrom Key: ${previousKey} : ${LEE_pretty_JSON(LEE_index_from_string(previousKey))}`;
 			}
-			LEE_print_debug_error(`No response defined for:\n${key} : ${LEE_pretty_JSON(LEE_index_from_string(LEE_responses, key))}${LEE_prevkey_addition}`);
+			LEE_print_debug_error(`No response defined for:\n${key} : ${LEE_pretty_JSON(LEE_index_from_string(key))}${LEE_prevkey_addition}`);
 		}
 	}
 	return [undefined];
@@ -249,10 +249,12 @@ function LEE_calculate_cost(key, input) {
 function LEE_calculate_match(input) {
 	let LEE_cost = null;
 	let LEE_best_key = null;
+	let LEE_second_best_key;
 	for (const key in LEE_matches) {
 		let LEE_new_cost = LEE_calculate_cost(key, input); // iterate through every key
 		if (LEE_cost === null || LEE_new_cost < LEE_cost) { // only set it new cost is less than previous best cost
 			LEE_cost = LEE_new_cost;
+			LEE_second_best_key = LEE_matches[key];
 			LEE_best_key = LEE_matches[key];
 			if (LEE_DEBUG_MODE) {
 				LEE_print_debug_error(`Best cost is ${LEE_cost} with key "${key}" from rule ${LEE_matches[key]}`, LEE_css_selectors.debug);
@@ -262,7 +264,10 @@ function LEE_calculate_match(input) {
 			return LEE_best_key;
 		}
 	}
-	if (input.length * LEE_config.errorMargin < LEE_cost) { // too many edits to be made with levenshtein algorithm, likely not a close match
+	if (input.length * LEE_config.suggestionRange[0] <= LEE_cost && LEE_cost <= input.length * LEE_config.suggestionRange[1]) {
+		LEE_handle_suggestion(input, LEE_second_best_key);
+		return -1;
+	} else if (input.length * LEE_config.errorMargin < LEE_cost) { // too many edits to be made with levenshtein algorithm, likely not a close match
 		return null;
 	}
 	return LEE_best_key;
@@ -277,6 +282,22 @@ function LEE_detect_command(input) {
 	return false;
 }
 
+function LEE_handle_suggestion(original_input, closest_key) {
+	let LEE_best_key = LEE_index_from_string(closest_key);
+	let LEE_best_closest_match = null;
+	let LEE_cost = null;
+	for (const key of LEE_best_key["match"]) {
+		let LEE_new_cost = LEE_levenshtein(key, original_input);
+		if (LEE_cost === null || LEE_new_cost < LEE_cost) {
+			LEE_cost = LEE_new_cost;
+			LEE_best_closest_match = key;
+		}
+	}
+	let LEE_reply = `${LEE_config.undefinedMessage} ${LEE_config.suggestionMessage}\n${LEE_best_closest_match}`;
+	LEE_construct_message(LEE_config.leeName, LEE_reply);
+	LEE_scroll_down();
+}
+
 function LEE_handle_command(input) {
 	const command = input.split(" ")[0];
 	switch (command) {
@@ -285,7 +306,7 @@ function LEE_handle_command(input) {
 			{ // wrap in { } to not expose variables to switch statement
 				let LEE_reply = `!commands       : shows this explanation
 !clear          : removes all messages from the chatlog
-!reinit         : reloads LeeConfig.json and resets all parameters to their initial values
+!reinit         : reloads LeeConfig.json and resets all parameters to their initial values (debug mode required)
 !search <query> : searches every message for the string <query>`;
 				LEE_construct_message(LEE_config.leeName, LEE_reply, 300);
 			}
@@ -294,14 +315,16 @@ function LEE_handle_command(input) {
 			LEE_chatlog_container.innerHTML = "";
 			break;
 		case "!reinit":
-			// reset all attributes
-			LEE_responses = null;
-			LEE_matches = {};
-			LEE_segments = {};
-			LEE_history = [];
-			LEE_history_index = 0;
-			LEE_lock_wrapper(LEE); // call init function again
-			LEE_scroll_down();
+			if (LEE_DEBUG_MODE) {
+				// reset all attributes
+				LEE_responses = null;
+				LEE_matches = {};
+				LEE_segments = {};
+				LEE_history = [];
+				LEE_history_index = 0;
+				LEE_lock_wrapper(LEE); // call init function again
+				LEE_scroll_down();
+			}
 			break;
 		case "!search":
 			{
@@ -334,6 +357,7 @@ async function LEE_get_input() {
 		return;
 	}
 	const LEE_best_match = LEE_calculate_match(LEE_treated_input);
+	if (LEE_best_match === -1) { return; }
 	const LEE_results = await LEE_reply_from_key(LEE_best_match);
 	let LEE_reply = LEE_results[0];
 	let LEE_delay = LEE_results[1];
