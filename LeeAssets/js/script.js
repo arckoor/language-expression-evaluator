@@ -23,6 +23,8 @@ let LEE_matches = {};
 let LEE_segments = {};
 let LEE_history = [];
 let LEE_history_index = 0;
+// eslint-disable-next-line no-undef
+const LEE_levenshtein = new js_levenshtein();
 
 LEE_lock_wrapper(LEE);
 
@@ -219,7 +221,7 @@ async function LEE_reply_from_key(key, previousKey = null) {
 function LEE_calculate_cost(key, input) {
 	key = key.toLowerCase();
 	input = input.toLowerCase();
-	const LEE_distance = LEE_levenshtein(key, input);
+	const LEE_distance = LEE_levenshtein.levenshtein(key, input);
 	let LEE_key_segments = LEE_remove_symbols(key).split(" ");
 	let LEE_input_segments = LEE_remove_symbols(input).split(" ");
 	let LEE_part_to_remove = null;
@@ -228,7 +230,7 @@ function LEE_calculate_cost(key, input) {
 	for (const partInput of LEE_input_segments) { // match each input segment to the closest rule segment
 		let LEE_lowest_part_distance = null;
 		for (const partKey of LEE_key_segments) {
-			let LEE_part_distance = LEE_levenshtein(partInput, partKey);
+			let LEE_part_distance = LEE_levenshtein.levenshtein(partInput, partKey);
 			if (LEE_lowest_part_distance === null || LEE_part_distance < LEE_lowest_part_distance) {
 				LEE_lowest_part_distance = LEE_part_distance;
 				LEE_part_to_remove = partKey;
@@ -287,7 +289,7 @@ function LEE_handle_suggestion(original_input, closest_key) {
 	let LEE_best_closest_match = null;
 	let LEE_cost = null;
 	for (const key of LEE_best_key["match"]) {
-		let LEE_new_cost = LEE_levenshtein(key, original_input);
+		let LEE_new_cost = LEE_levenshtein.levenshtein(key, original_input);
 		if (LEE_cost === null || LEE_new_cost < LEE_cost) {
 			LEE_cost = LEE_new_cost;
 			LEE_best_closest_match = key;
@@ -496,113 +498,4 @@ source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global
 */
 function LEE_randint(min, max) {
 	return Math.floor(Math.random() * (max - min + 1) + min);
-}
-
-/*
-title: js-levenshtein
-author: Gustaf Andersson
-date: 16.03.2022
-version: 1.1.6
-source: https://github.com/gustf/js-levenshtein
-license: MIT - Copyright (c) 2017 Gustaf Andersson
-
-For simplicity, these two functions are included in this file instead of imported / required. This is meant to be runnable stand-alone (no node.js / webpack / ...).
-The only modifications to this code were changing "var" to "let" and renaming the functions to fit the rest of this file.
-*/
-function LEE_levenshtein(a, b) {
-	if (a === b) {
-		return 0;
-	}
-
-	if (a.length > b.length) {
-		let tmp = a;
-		a = b;
-		b = tmp;
-	}
-
-	let la = a.length;
-	let lb = b.length;
-
-	while (la > 0 && (a.charCodeAt(la - 1) === b.charCodeAt(lb - 1))) {
-		la--;
-		lb--;
-	}
-
-	let offset = 0;
-
-	while (offset < la && (a.charCodeAt(offset) === b.charCodeAt(offset))) {
-		offset++;
-	}
-
-	la -= offset;
-	lb -= offset;
-
-	if (la === 0 || lb < 3) {
-		return lb;
-	}
-
-	let x = 0;
-	let y;
-	let d0;
-	let d1;
-	let d2;
-	let d3;
-	let dd;
-	let dy;
-	let ay;
-	let bx0;
-	let bx1;
-	let bx2;
-	let bx3;
-
-	let vector = [];
-
-	for (y = 0; y < la; y++) {
-		vector.push(y + 1);
-		vector.push(a.charCodeAt(offset + y));
-	}
-
-	let len = vector.length - 1;
-
-	for (; x < lb - 3;) {
-		bx0 = b.charCodeAt(offset + (d0 = x));
-		bx1 = b.charCodeAt(offset + (d1 = x + 1));
-		bx2 = b.charCodeAt(offset + (d2 = x + 2));
-		bx3 = b.charCodeAt(offset + (d3 = x + 3));
-		dd = (x += 4);
-		for (y = 0; y < len; y += 2) {
-			dy = vector[y];
-			ay = vector[y + 1];
-			d0 = LEE_levenshtein_min(dy, d0, d1, bx0, ay);
-			d1 = LEE_levenshtein_min(d0, d1, d2, bx1, ay);
-			d2 = LEE_levenshtein_min(d1, d2, d3, bx2, ay);
-			dd = LEE_levenshtein_min(d2, d3, dd, bx3, ay);
-			vector[y] = dd;
-			d3 = d2;
-			d2 = d1;
-			d1 = d0;
-			d0 = dy;
-		}
-	}
-
-	for (; x < lb;) {
-		bx0 = b.charCodeAt(offset + (d0 = x));
-		dd = ++x;
-		for (y = 0; y < len; y += 2) {
-			dy = vector[y];
-			vector[y] = dd = LEE_levenshtein_min(dy, d0, dd, bx0, vector[y + 1]);
-			d0 = dy;
-		}
-	}
-	return dd;
-}
-
-function LEE_levenshtein_min(d0, d1, d2, bx, ay) {
-	return d0 < d1 || d2 < d1
-		? d0 > d2
-			? d2 + 1
-			: d0 + 1
-		: bx === ay
-			? d1
-			: d1 + 1;
 }
