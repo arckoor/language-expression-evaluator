@@ -18,13 +18,13 @@ const LEE_css_selectors = {
 const LEE_config_file_name = "./LeeAssets/config/LeeConfig.json";
 const LEE_config = {};
 const LEE_commands = ["!commands", "!help", "!clear", "!reinit", "!search"];
+// eslint-disable-next-line no-undef
+const lev = new js_levenshtein();
 let LEE_responses;
 let LEE_matches = {};
 let LEE_segments = {};
 let LEE_history = [];
 let LEE_history_index = 0;
-// eslint-disable-next-line no-undef
-const LEE_levenshtein = new js_levenshtein();
 
 LEE_lock_wrapper(LEE);
 
@@ -221,7 +221,7 @@ async function LEE_reply_from_key(key, previousKey = null) {
 function LEE_calculate_cost(key, input) {
 	key = key.toLowerCase();
 	input = input.toLowerCase();
-	const LEE_distance = LEE_levenshtein.levenshtein(key, input);
+	const LEE_distance = lev.levenshtein(key, input);
 	let LEE_key_segments = LEE_remove_symbols(key).split(" ");
 	let LEE_input_segments = LEE_remove_symbols(input).split(" ");
 	let LEE_part_to_remove = null;
@@ -230,7 +230,7 @@ function LEE_calculate_cost(key, input) {
 	for (const partInput of LEE_input_segments) { // match each input segment to the closest rule segment
 		let LEE_lowest_part_distance = null;
 		for (const partKey of LEE_key_segments) {
-			let LEE_part_distance = LEE_levenshtein.levenshtein(partInput, partKey);
+			let LEE_part_distance = lev.levenshtein(partInput, partKey);
 			if (LEE_lowest_part_distance === null || LEE_part_distance < LEE_lowest_part_distance) {
 				LEE_lowest_part_distance = LEE_part_distance;
 				LEE_part_to_remove = partKey;
@@ -286,10 +286,13 @@ function LEE_detect_command(input) {
 
 function LEE_handle_suggestion(original_input, closest_key) {
 	let LEE_best_key = LEE_index_from_string(closest_key);
+	if (LEE_DEBUG_MODE) {
+		LEE_print_debug_error(`Computing closest match for key ${closest_key}`, LEE_css_selectors.debug);
+	}
 	let LEE_best_closest_match = null;
 	let LEE_cost = null;
 	for (const key of LEE_best_key["match"]) {
-		let LEE_new_cost = LEE_levenshtein.levenshtein(key, original_input);
+		let LEE_new_cost = lev.levenshtein(key, original_input);
 		if (LEE_cost === null || LEE_new_cost < LEE_cost) {
 			LEE_cost = LEE_new_cost;
 			LEE_best_closest_match = key;
