@@ -308,43 +308,55 @@ function LEE_handle_command(input) {
 	switch (command) {
 		case "!help":
 		case "!commands":
-			{ // wrap in { } to not expose variables to switch statement
-				let LEE_reply = `!commands       : shows this explanation
+			LEE_command_list_commands();
+			break;
+		case "!clear":
+			LEE_command_clear();
+			break;
+		case "!reinit":
+			LEE_command_reinit();
+			break;
+		case "!search":
+			LEE_command_search(input);
+			break;
+	}
+}
+
+function LEE_command_list_commands() {
+	let LEE_reply = `!commands       : shows this explanation
 !clear          : removes all messages from the chatlog
 !reinit         : reloads LeeConfig.json and resets all parameters to their initial values (debug mode required)
 !search <query> : searches every message for the string <query>`;
-				LEE_construct_message(LEE_config.leeName, LEE_reply, 300);
-			}
-			break;
-		case "!clear":
-			LEE_chatlog_container.innerHTML = "";
-			break;
-		case "!reinit":
-			if (LEE_DEBUG_MODE) {
-				// reset all attributes
-				LEE_responses = null;
-				LEE_matches = {};
-				LEE_segments = {};
-				LEE_history = [];
-				LEE_history_index = 0;
-				LEE_lock_wrapper(LEE); // call init function again
-				LEE_scroll_down();
-			}
-			break;
-		case "!search":
-			{
-				for (const child of LEE_chatlog_container.children) {
-					child.classList.remove(LEE_css_selectors.search); // remove from everything
-				}
-				let LEE_search_query = input.replace("!search", "").trim().toLowerCase();
-				let LEE_children = Array.from(LEE_chatlog_container.children);
-				LEE_children.forEach ((child, index) => {
-					if (child.innerText.toLowerCase().indexOf(LEE_search_query) !== -1 && index !== LEE_children.length - 1) { // only if innerText contains the search query and it is not the search query itself
-						child.classList.add(LEE_css_selectors.search);
-					}
-				});
-			}
-			break;
+	LEE_construct_message(LEE_config.leeName, LEE_reply, 300);
+}
+
+function LEE_command_clear() {
+	LEE_chatlog_container.innerHTML = "";
+}
+
+function LEE_command_search(query) {
+	for (const child of LEE_chatlog_container.children) {
+		child.classList.remove(LEE_css_selectors.search); // remove from everything
+	}
+	let LEE_search_query = query.replace("!search", "").trim().toLowerCase();
+	let LEE_children = Array.from(LEE_chatlog_container.children);
+	LEE_children.forEach ((child, index) => {
+		if (child.innerText.toLowerCase().indexOf(LEE_search_query) !== -1 && index !== LEE_children.length - 1) { // only if innerText contains the search query and it is not the search query itself
+			child.classList.add(LEE_css_selectors.search);
+		}
+	});
+}
+
+function LEE_command_reinit() {
+	if (LEE_DEBUG_MODE) {
+		// reset all attributes
+		LEE_responses = null;
+		LEE_matches = {};
+		LEE_segments = {};
+		LEE_history = [];
+		LEE_history_index = 0;
+		LEE_lock_wrapper(LEE); // call init function again
+		LEE_scroll_down();
 	}
 }
 
