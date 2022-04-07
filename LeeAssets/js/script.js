@@ -60,24 +60,20 @@ function LEE_pretty_JSON(msg) {
 function LEE_set_equal_name_length() {
 	let LEE_max_name_len = 0;
 	for (const key in LEE_config) { // compute max length of all names
-		if (key.indexOf("Name") !== -1) {
-			if (LEE_config[key].length > LEE_max_name_len) {
-				if (key.indexOf("debug") !== -1) { // only include debug if DEBUG_MODE is true, otherwise names could be unnecessarily long
-					if (LEE_DEBUG_MODE) {
-						LEE_max_name_len = LEE_config[key].length + 1;
-					}
-				} else {
-					LEE_max_name_len = LEE_config[key].length + 2;
+		if (key.includes("Name")) {
+			if (key.includes("debug")) { // only include debug if DEBUG_MODE is true, otherwise names could be unnecessarily long
+				if (LEE_DEBUG_MODE) {
+					LEE_max_name_len = Math.max(LEE_max_name_len, LEE_config[key].length + 1);
 				}
+			} else {
+				LEE_max_name_len = Math.max(LEE_max_name_len, LEE_config[key].length + 1);
 			}
 		}
 	}
 	for (const key in LEE_config) { // set all to equal max length
-		if (key.indexOf("Name") !== -1) {
+		if (key.includes("Name")) {
 			const LEE_length_diff = Math.abs(LEE_max_name_len - LEE_config[key].length); // get difference between max and name length
-			for (let i = 0; i < LEE_length_diff; i++) {
-				LEE_config[key] += String.fromCharCode(160); // &nbsp;
-			}
+			LEE_config[key] += String.fromCharCode(160).repeat(LEE_length_diff); // &nbsp
 		}
 	}
 }
@@ -100,12 +96,10 @@ function LEE_sanitize_data() {
 					LEE_responses[topic][rule][key] = LEE_default;
 				}
 			}
-			// transform to array to make indexing, counting and referring easier
-			if (typeof(LEE_responses[topic][rule]["match"]) === "string") {
-				LEE_responses[topic][rule]["match"] = [LEE_responses[topic][rule]["match"]];
-			}
-			if (typeof(LEE_responses[topic][rule]["response"]) === "string") {
-				LEE_responses[topic][rule]["response"] = [LEE_responses[topic][rule]["response"]];
+			for (const key of ["match", "response"]) { // transform to array to make indexing, counting and referring easier
+				if (typeof(LEE_responses[topic][rule][key]) === "string") {
+					LEE_responses[topic][rule][key] = [LEE_responses[topic][rule][key]];
+				}
 			}
 			if (LEE_responses[topic][rule]["match"]) { // construct rule to key mapping
 				const LEE_match = LEE_responses[topic][rule]["match"];
@@ -184,7 +178,7 @@ async function LEE_reply_from_key(key, previousKey = null) {
 				} else {
 					if (LEE_cr["ref"] !== null) { // at the end of the array, if there is a ref redirect there
 						let LEE_new_key = LEE_cr["ref"];
-						if (LEE_new_key.indexOf("this.") !== -1) { // if in the same subkey, take the original key, remove the lowest level key and then append everything after "this."
+						if (LEE_new_key.includes("this.")) { // if in the same subkey, take the original key, remove the lowest level key and then append everything after "this."
 							LEE_new_key = key.substring(0, key.lastIndexOf(".") + 1) + LEE_new_key.replace("this.", "");
 						}
 						if (previousKey === key) { // would recurse until infinity (or until the stack runs out of space)
@@ -277,7 +271,7 @@ function LEE_calculate_match(input) {
 
 function LEE_detect_command(input) {
 	for (const command of LEE_commands) {
-		if (input.split(" ")[0].indexOf(command) !== -1) { // detects commands only if they occur at the start
+		if (input.split(" ")[0].includes(command)) { // detects commands only if they occur at the start
 			return	true;
 		}
 	}
@@ -341,7 +335,7 @@ function LEE_command_search(query) {
 	let LEE_search_query = query.replace("!search", "").trim().toLowerCase();
 	let LEE_children = Array.from(LEE_chatlog_container.children);
 	LEE_children.forEach ((child, index) => {
-		if (child.innerText.toLowerCase().indexOf(LEE_search_query) !== -1 && index !== LEE_children.length - 1) { // only if innerText contains the search query and it is not the search query itself
+		if (child.innerText.toLowerCase().includes(LEE_search_query) && index !== LEE_children.length - 1) { // only if innerText contains the search query and it is not the search query itself
 			child.classList.add(LEE_css_selectors.search);
 		}
 	});
