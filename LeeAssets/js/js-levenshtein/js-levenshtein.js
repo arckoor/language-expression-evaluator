@@ -7,7 +7,7 @@ version: 1.1.6
 source: https://github.com/gustf/js-levenshtein
 license: MIT - Copyright (c) 2017 Gustaf Andersson
 
-For simplicity, these two functions are included in this projected instead of imported / required. This is meant to be runnable stand-alone (no node.js / webpack / ...).
+For simplicity, these two functions are included in this project instead of imported / required. This is meant to be runnable stand-alone (no node.js / webpack / ...).
 The code was modified slightly to be class compatible.
 */
 // eslint-disable-next-line no-unused-vars
