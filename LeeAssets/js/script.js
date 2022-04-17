@@ -159,55 +159,69 @@ function LEE_index_from_string(responseKey) {
 	return LEE_current_object;
 }
 
-async function LEE_reply_from_key(key, previousKey = null) {
-	const LEE_cr = LEE_index_from_string(key); // cr -> current_response
-	let LEE_reply = null;
-	let LEE_skip = false;
-	if (LEE_cr !== undefined) {
-		if (LEE_cr["response"] === null && LEE_cr["ref"] !== null) {
-			LEE_skip = true; // no response(s), but there is a ref so immediately go there and skip everything else
-		}
-		if (LEE_skip || LEE_cr["response"] !== null) {
-			if (!LEE_skip && LEE_cr["random"]) { // pick a random response
-				const LEE_random_index = LEE_randint(0, LEE_cr["response"].length - 1);
-				LEE_reply = LEE_cr["response"][LEE_random_index];
-			} else {
-				if (!LEE_skip && LEE_cr["counter"] !== LEE_cr["response"].length) { // check if the counter is at the arrays last index
-					LEE_reply = LEE_cr["response"][LEE_cr["counter"]];
-					LEE_cr["counter"]++;
-				} else {
-					if (LEE_cr["ref"] !== null) { // at the end of the array, if there is a ref redirect there
-						let LEE_new_key = LEE_cr["ref"];
-						if (LEE_new_key.includes("this.")) { // if in the same subkey, take the original key, remove the lowest level key and then append everything after "this."
-							LEE_new_key = key.substring(0, key.lastIndexOf(".") + 1) + LEE_new_key.replace("this.", "");
-						}
-						if (previousKey === key) { // would recurse until infinity (or until the stack runs out of space)
-							if (LEE_DEBUG_MODE) {
-								LEE_print_debug_error(`Recursion detected:\n${key} ${LEE_pretty_JSON(LEE_index_from_string(key))}`);
-							}
-							return [undefined];
-						}
-						if (previousKey === null) {
-							previousKey = key; // set up recursion safety
-						}
-						return await LEE_reply_from_key(LEE_new_key, previousKey); // recurse to resolve new key
-					} else {
-						LEE_reply = LEE_cr["response"][LEE_cr["counter"] - 1]; // repeat the last entry the array has
-					}
-				}
-			}
-		}
+function LEE_module_exists(rule) {
+	if (rule !== undefined) {
+		return null;
+	}
+	return [undefined];
+}
 
-		if (LEE_reply !== null) {
-			return [LEE_reply, LEE_cr["delay"], LEE_cr["encode"]];
+function LEE_module_random(rule) {
+	if (rule["response"] !== null && rule["random"]) {
+		return rule["response"][LEE_randint(0, rule["response"].length - 1)];
+	}
+	return null;
+}
+
+function LEE_module_sequence(rule) {
+	if (rule["response"] !== null) {
+		if (rule["counter"] !== rule["response"].length) {
+			const temp = rule["response"][rule["counter"]];
+			rule["counter"]++;
+			return temp;
+		} else if (rule["ref"] !== null) {
+			return null;
+		} else {
+			return rule["response"][rule["counter"] - 1];
 		}
-		if (LEE_DEBUG_MODE) {
-			let LEE_prevkey_addition = ""; // used when the key is recursive
-			if (previousKey) {
-				LEE_prevkey_addition = `\n\nFrom Key: ${previousKey} : ${LEE_pretty_JSON(LEE_index_from_string(previousKey))}`;
+	}
+	return null;
+}
+
+async function LEE_module_ref(rule, key, previousKey) {
+	if (rule["ref"] !== null) {
+		let LEE_new_key = rule["ref"];
+		if (LEE_new_key.includes("this.")) { // if in the same subkey, take the original key, remove the lowest level key and then append everything after "this."
+			LEE_new_key = key.substring(0, key.lastIndexOf(".") + 1) + LEE_new_key.replace("this.", "");
+		}
+		if (previousKey === key) { // would recurse until infinity (or until the stack runs out of space)
+			if (LEE_DEBUG_MODE) {
+				LEE_print_debug_error(`Recursion detected:\n${key} ${LEE_pretty_JSON(LEE_index_from_string(key))}`);
 			}
-			LEE_print_debug_error(`No response defined for:\n${key} : ${LEE_pretty_JSON(LEE_index_from_string(key))}${LEE_prevkey_addition}`);
+			return [undefined];
 		}
+		if (previousKey === null) {
+			previousKey = key; // set up recursion safety
+		}
+		return await LEE_reply_from_key(LEE_new_key, previousKey); // recurse to resolve new key
+	}
+}
+
+async function LEE_reply_from_key(key, previousKey = null) {
+	const LEE_cr = LEE_index_from_string(key);
+	let LEE_reply = null;
+	LEE_reply ??= LEE_module_exists(LEE_cr);
+	LEE_reply ??= LEE_module_random(LEE_cr);
+	LEE_reply ??= LEE_module_sequence(LEE_cr);
+	LEE_reply ??= await LEE_module_ref(LEE_cr, key, previousKey);
+	if (LEE_reply !== null && !LEE_compare_array(LEE_reply, [undefined])) {
+		return previousKey === null ? [LEE_reply, LEE_cr["delay"], LEE_cr["encode"]] : LEE_reply;
+	} else if (LEE_DEBUG_MODE && LEE_cr !== undefined) {
+		let LEE_prevkey_addition = ""; // used when the key is recursive
+		if (previousKey) {
+			LEE_prevkey_addition = `\n\nFrom Key: ${previousKey} : ${LEE_pretty_JSON(LEE_index_from_string(previousKey))}`;
+		}
+		LEE_print_debug_error(`No response defined for:\n${key} : ${LEE_pretty_JSON(LEE_index_from_string(key))}${LEE_prevkey_addition}`);
 	}
 	return [undefined];
 }
@@ -488,6 +502,18 @@ function LEE_scroll_down() {
 async function LEE_print_debug_error(msg, severity = LEE_css_selectors.error) {
 	const LEE_debug_msg = await LEE_construct_message(LEE_config.debugName, msg);
 	LEE_debug_msg.classList.add(severity);
+}
+
+function LEE_compare_array(a1, a2) {
+	if (!Array.isArray(a1) || !Array.isArray(a2)) {
+		return false;
+	} else if (a1.length !== a2.length) {
+		return false;
+	}
+	for (let i = 0; i < a1.length; i++) {
+		if (!(a1[i] === a2[i])) { return false; }
+	}
+	return true;
 }
 
 /*
