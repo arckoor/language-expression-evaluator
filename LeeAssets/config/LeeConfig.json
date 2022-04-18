@@ -22,7 +22,7 @@
         "aboutLee" : {
             "Help" : {
                 "match" : ["Help.", "Help me.", "I'm stuck.", "I don't know what I should ask.", "What can I ask?", "What are good questions?"],
-                "response" : "If you are stuck and can't think of any questions you could ask, here are some suggestions:\n- Who are you?\n- Why were you developed?\n- What features do you have?\n- Why were you created?"
+                "response" : "If you are stuck and can't think of any questions you could ask, here are some suggestions:\n- Who are you?\n- Why were you developed?\n- What features do you have?\n- What is 'encode'?"
             },
             "Hello" : {
                 "match" : ["Hi!", "Hello!"],
@@ -46,7 +46,7 @@
                 "response" : "I was developed as a school project. I am the improved version of a chatbot my developer had to work with in his Computer Science Lessons.\nI fix all the bugs arckoor encountered and add some more features."
             },
             "Features" : {
-                "match" : ["Features", "What are your features?", "What can you do?", "What are you capable of?"],
+                "match" : ["Features", "What are your features?", "What can you do?", "What are you capable of?", "What features do you have?"],
                 "response" : "I can:\n   - have multiple matches and responses\n   - redirect to other rules\n   - add a custom delay to each message\n   - encode html into the rule text\n   - choose responses at random\nI also have a lot of debug logging for events such as:\n   - successful cost calculation\n   - errors while reading the config file\n   - errors while redirecting to another rule\n   - other rule related errors"
             },
             "CostCalculation" : {
