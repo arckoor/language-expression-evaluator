@@ -74,6 +74,11 @@
                 "match" : ["How fast are you?", "How long does running take?", "Are you fast?", "How quick are you?", "Does evaluation take a lot of time?"],
                 "response" : "Due to the usage of the excellent <a target=_blank href=https://github.com/gustf/js-levenshtein>js-levenshtein</a> library, I can run very fast. The delay you notice in my answers is me just waiting, it is not the time it takes for me to calculate my response.",
                 "encode" : true
+            },
+            "Encoding" : {
+                "match" : ["How does encoding work?", "Encode", "What is encode?"],
+                "response" : ["With encode you can include HTML tags in you response: <span style=\"color: red;\">This is some red text.</span>", "Inline styling is achieved through the use of the < span > tag.", "Technically, you can put any HTML tag into your response:<br><br><table><tr><td>Why</td><td>not</td></tr><tr><td>make</td><td>a</td></tr><tr><td>simple</td><td>table?</td></tr></table><style>table,td{border: 2px dotted;color: cyan;border-collapse: collapse;}</style>\nIt get's a little tedious and unreadable however."],
+                "encode" : true
             }
         }
     }
