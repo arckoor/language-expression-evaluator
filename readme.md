@@ -90,9 +90,13 @@ Infinite recursive loops are not permitted.
 ```
 This will abandon the answering attempt and throw a debug error. This behavior is detected across all lengths of chains and across all categories.
 
-`encode` specifies whether the response text will be interpreted as text or as HTML. This can be used to include links with `<a href=""></a>`, include other HTML elements or apply custom styling to certain text elements (use non-standard tags if the layout breaks).
+`encode` specifies whether the response text will be interpreted as text or as HTML. This can be used to include links with `<a href=""></a>`, include other HTML elements or apply custom styling to certain text elements (use `<span>` if the layout breaks).
 
 `counter` should not be configured in the config file and is instead initialized to `0`. It is used to keep track of the current array index.
+
+#### Adding new rules
+
+To add new rules, include a new `LEE_module_your_rule` in `script.js` and add it to the chain in `LEE_reply_from_key`. On success it should return the new answer, otherwise `null` is expected. This ensures the `??=` operator works. The name of a new attribute for rules has to be included in the `attributes` part of `config`.
 
 ## Cost calculation
 The bot uses the [Levenshtein](#packages) algorithm to determine the best match for a given input. The cost value is calculated in two stages. First the general distance is calculated and multiplied by `config.weights.distanceMultiplier`.<br>
