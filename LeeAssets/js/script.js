@@ -28,6 +28,7 @@ let LEE_history_index = 0;
 
 LEE_lock_wrapper(LEE);
 
+// - - - init - - -
 async function LEE() {
 	await LEE_load_config();
 	LEE_sanitize_data();
@@ -36,6 +37,7 @@ async function LEE() {
 	if (LEE_config.initMsg !== undefined && LEE_config.initMsg !== null) {
 		await LEE_construct_message(LEE_config.leeName, LEE_config.initMsg, LEE_config.initMsgDelay);
 	}
+	LEE_input.addEventListener("keydown", LEE_input_listener);
 }
 
 async function LEE_load_config() {
@@ -51,31 +53,6 @@ async function LEE_load_config() {
 		LEE_config[key] = LEE_data.config[key];
 	}
 	LEE_responses = LEE_data.rules;
-}
-
-function LEE_pretty_JSON(msg) {
-	return JSON.stringify(msg, null, 4);
-}
-
-function LEE_set_equal_name_length() {
-	let LEE_max_name_len = 0;
-	for (const key in LEE_config) { // compute max length of all names
-		if (key.includes("Name")) {
-			if (key.includes("debug")) { // only include debug if DEBUG_MODE is true, otherwise names could be unnecessarily long
-				if (LEE_DEBUG_MODE) {
-					LEE_max_name_len = Math.max(LEE_max_name_len, LEE_config[key].length + 1);
-				}
-			} else {
-				LEE_max_name_len = Math.max(LEE_max_name_len, LEE_config[key].length + 1);
-			}
-		}
-	}
-	for (const key in LEE_config) { // set all to equal max length
-		if (key.includes("Name")) {
-			const LEE_length_diff = Math.abs(LEE_max_name_len - LEE_config[key].length); // get difference between max and name length
-			LEE_config[key] += String.fromCharCode(160).repeat(LEE_length_diff); // &nbsp
-		}
-	}
 }
 
 function LEE_sanitize_data() {
@@ -133,30 +110,123 @@ function LEE_create_weights() {
 	}
 }
 
-function LEE_remove_symbols(str) {
-	return str.replace(/[^a-zA-Z0-9 ]/g, ""); // select everything a-z A-Z 0-9 and whitespace, ^ inverts everything -> removes everything not in the previously selected, /g is for all occurrences
-}
-
-function LEE_index_from_string(responseKey) {
-	if (!responseKey) {
-		return undefined;
-	}
-	if (responseKey.indexOf("rules.") === 0) {
-		responseKey = responseKey.replace("rules.", "");
-	}
-	const LEE_subkeys = responseKey.split(".");
-	let LEE_current_object = LEE_responses;
-	for (const key of LEE_subkeys) {
-		if (LEE_current_object) {
-			LEE_current_object = LEE_current_object[key]; // resolve key
-		} else {
-			if (LEE_DEBUG_MODE) {
-				LEE_print_debug_error(`Key "${responseKey}" does not exist.`);
-				return undefined; // the supplied key does not exist, return undefined and let calling function handle
+function LEE_set_equal_name_length() {
+	let LEE_max_name_len = 0;
+	for (const key in LEE_config) { // compute max length of all names
+		if (key.includes("Name")) {
+			if (key.includes("debug")) { // only include debug if DEBUG_MODE is true, otherwise names could be unnecessarily long
+				if (LEE_DEBUG_MODE) {
+					LEE_max_name_len = Math.max(LEE_max_name_len, LEE_config[key].length + 1);
+				}
+			} else {
+				LEE_max_name_len = Math.max(LEE_max_name_len, LEE_config[key].length + 1);
 			}
 		}
 	}
-	return LEE_current_object;
+	for (const key in LEE_config) { // set all to equal max length
+		if (key.includes("Name")) {
+			const LEE_length_diff = Math.abs(LEE_max_name_len - LEE_config[key].length); // get difference between max and name length
+			LEE_config[key] += String.fromCharCode(160).repeat(LEE_length_diff); // &nbsp
+		}
+	}
+}
+
+// - - - match calculation - - -
+function LEE_calculate_match(input) {
+	let LEE_cost = null;
+	let LEE_best_key = null;
+	let LEE_second_best_key;
+	for (const key in LEE_matches) {
+		let LEE_new_cost = LEE_calculate_cost(key, input); // iterate through every key
+		if (LEE_cost === null || LEE_new_cost < LEE_cost) { // only set it new cost is less than previous best cost
+			LEE_cost = LEE_new_cost;
+			LEE_second_best_key = LEE_matches[key];
+			LEE_best_key = LEE_matches[key];
+			if (LEE_DEBUG_MODE) {
+				LEE_print_debug_error(`Best cost is ${LEE_cost} with key "${key}" from rule ${LEE_matches[key]}`, LEE_css_selectors.debug);
+			}
+		}
+		if (LEE_cost === 0) { // exact match, short-circuit
+			return LEE_best_key;
+		}
+	}
+	if (input.length * LEE_config.suggestionRange[0] <= LEE_cost && LEE_cost <= input.length * LEE_config.suggestionRange[1]) {
+		LEE_handle_suggestion(input, LEE_second_best_key);
+		return -1;
+	} else if (input.length * LEE_config.errorMargin < LEE_cost) { // too many edits to be made with levenshtein algorithm, likely not a close match
+		return null;
+	}
+	return LEE_best_key;
+}
+
+function LEE_calculate_cost(key, input) {
+	key = key.toLowerCase();
+	input = input.toLowerCase();
+	const LEE_distance = lev.levenshtein(key, input);
+	let LEE_key_segments = LEE_remove_symbols(key).split(" ");
+	let LEE_input_segments = LEE_remove_symbols(input).split(" ");
+	let LEE_part_to_remove = null;
+
+	let LEE_combined_part_distance = 0;
+	for (const partInput of LEE_input_segments) { // match each input segment to the closest rule segment
+		let LEE_lowest_part_distance = null;
+		for (const partKey of LEE_key_segments) {
+			let LEE_part_distance = lev.levenshtein(partInput, partKey);
+			if (LEE_lowest_part_distance === null || LEE_part_distance < LEE_lowest_part_distance) {
+				LEE_lowest_part_distance = LEE_part_distance;
+				LEE_part_to_remove = partKey;
+			}
+		}
+		if (LEE_key_segments.length > 1) {
+			LEE_key_segments.splice(LEE_key_segments.indexOf(LEE_part_to_remove), 1); // remove the closest match so it doesn't get used again
+		}
+		let LEE_multiplier = 1;
+		if (LEE_segments[partInput]) {
+			LEE_multiplier = 1 / (LEE_segments[partInput] ** LEE_config.weights.segmentPower); // this number decreases with number of occurrences of a given word
+		}
+		LEE_combined_part_distance += LEE_lowest_part_distance * LEE_multiplier;
+	}
+	return LEE_combined_part_distance * LEE_config.weights.partMultiplier + LEE_distance * LEE_config.weights.distanceMultiplier;
+}
+
+function LEE_handle_suggestion(original_input, closest_key) {
+	let LEE_best_key = LEE_index_from_string(closest_key);
+	if (LEE_DEBUG_MODE) {
+		LEE_print_debug_error(`Computing closest match for key ${closest_key}`, LEE_css_selectors.debug);
+	}
+	let LEE_best_closest_match = null;
+	let LEE_cost = null;
+	for (const key of LEE_best_key["match"]) {
+		let LEE_new_cost = lev.levenshtein(key, original_input);
+		if (LEE_cost === null || LEE_new_cost < LEE_cost) {
+			LEE_cost = LEE_new_cost;
+			LEE_best_closest_match = key;
+		}
+	}
+	let LEE_reply = `${LEE_config.undefinedMessage} ${LEE_config.suggestionMessage}\n${LEE_best_closest_match}`;
+	LEE_construct_message(LEE_config.leeName, LEE_reply);
+	LEE_scroll_down();
+}
+
+// - - - match reply - - -
+async function LEE_reply_from_key(key, previousKey = null) {
+	const LEE_cr = LEE_index_from_string(key);
+	let LEE_reply = null;
+	LEE_reply ??= LEE_module_exists(LEE_cr);
+	LEE_reply ??= LEE_module_random(LEE_cr);
+	LEE_reply ??= LEE_module_sequence(LEE_cr);
+	LEE_reply ??= await LEE_module_ref(LEE_cr, key, previousKey);
+	if (LEE_reply !== null && LEE_cr !== undefined && !LEE_compare_array(LEE_reply, [undefined]) && !LEE_compare_array(LEE_reply, [null])) {
+		return previousKey === null ? [LEE_reply, LEE_cr["delay"], LEE_cr["encode"]] : LEE_reply;
+	} else if (LEE_DEBUG_MODE && LEE_cr !== undefined && !LEE_compare_array(LEE_reply, [null])) {
+		let LEE_prevkey_addition = ""; // used when the key is recursive
+		if (previousKey) {
+			LEE_prevkey_addition = `\n\nFrom Key: ${previousKey} : ${LEE_pretty_JSON(LEE_index_from_string(previousKey))}`;
+		}
+		LEE_print_debug_error(`No response defined for:\n${key} : ${LEE_pretty_JSON(LEE_index_from_string(key))}${LEE_prevkey_addition}`);
+		return [null];
+	}
+	return LEE_compare_array(LEE_reply, [null]) ? [null] : [undefined];
 }
 
 function LEE_module_exists(rule) {
@@ -198,91 +268,39 @@ async function LEE_module_ref(rule, key, previousKey) {
 			if (LEE_DEBUG_MODE) {
 				LEE_print_debug_error(`Recursion detected:\n${key} ${LEE_pretty_JSON(LEE_index_from_string(key))}`);
 			}
-			return [undefined];
+			return [null];
 		}
 		if (previousKey === null) {
 			previousKey = key; // set up recursion safety
 		}
 		return await LEE_reply_from_key(LEE_new_key, previousKey); // recurse to resolve new key
 	}
+	return null;
 }
 
-async function LEE_reply_from_key(key, previousKey = null) {
-	const LEE_cr = LEE_index_from_string(key);
-	let LEE_reply = null;
-	LEE_reply ??= LEE_module_exists(LEE_cr);
-	LEE_reply ??= LEE_module_random(LEE_cr);
-	LEE_reply ??= LEE_module_sequence(LEE_cr);
-	LEE_reply ??= await LEE_module_ref(LEE_cr, key, previousKey);
-	if (LEE_reply !== null && !LEE_compare_array(LEE_reply, [undefined])) {
-		return previousKey === null ? [LEE_reply, LEE_cr["delay"], LEE_cr["encode"]] : LEE_reply;
-	} else if (LEE_DEBUG_MODE && LEE_cr !== undefined) {
-		let LEE_prevkey_addition = ""; // used when the key is recursive
-		if (previousKey) {
-			LEE_prevkey_addition = `\n\nFrom Key: ${previousKey} : ${LEE_pretty_JSON(LEE_index_from_string(previousKey))}`;
-		}
-		LEE_print_debug_error(`No response defined for:\n${key} : ${LEE_pretty_JSON(LEE_index_from_string(key))}${LEE_prevkey_addition}`);
+function LEE_index_from_string(responseKey) {
+	if (!responseKey) {
+		return undefined;
 	}
-	return [undefined];
-}
-
-function LEE_calculate_cost(key, input) {
-	key = key.toLowerCase();
-	input = input.toLowerCase();
-	const LEE_distance = lev.levenshtein(key, input);
-	let LEE_key_segments = LEE_remove_symbols(key).split(" ");
-	let LEE_input_segments = LEE_remove_symbols(input).split(" ");
-	let LEE_part_to_remove = null;
-
-	let LEE_combined_part_distance = 0;
-	for (const partInput of LEE_input_segments) { // match each input segment to the closest rule segment
-		let LEE_lowest_part_distance = null;
-		for (const partKey of LEE_key_segments) {
-			let LEE_part_distance = lev.levenshtein(partInput, partKey);
-			if (LEE_lowest_part_distance === null || LEE_part_distance < LEE_lowest_part_distance) {
-				LEE_lowest_part_distance = LEE_part_distance;
-				LEE_part_to_remove = partKey;
-			}
-		}
-		if (LEE_key_segments.length > 1) {
-			LEE_key_segments.splice(LEE_key_segments.indexOf(LEE_part_to_remove), 1); // remove the closest match so it doesn't get used again
-		}
-		let LEE_multiplier = 1;
-		if (LEE_segments[partInput]) {
-			LEE_multiplier = 1 / (LEE_segments[partInput] ** LEE_config.weights.segmentPower); // this number decreases with number of occurrences of a given word
-		}
-		LEE_combined_part_distance += LEE_lowest_part_distance * LEE_multiplier;
+	if (responseKey.indexOf("rules.") === 0) {
+		responseKey = responseKey.replace("rules.", "");
 	}
-	return LEE_combined_part_distance * LEE_config.weights.partMultiplier + LEE_distance * LEE_config.weights.distanceMultiplier;
-}
-
-function LEE_calculate_match(input) {
-	let LEE_cost = null;
-	let LEE_best_key = null;
-	let LEE_second_best_key;
-	for (const key in LEE_matches) {
-		let LEE_new_cost = LEE_calculate_cost(key, input); // iterate through every key
-		if (LEE_cost === null || LEE_new_cost < LEE_cost) { // only set it new cost is less than previous best cost
-			LEE_cost = LEE_new_cost;
-			LEE_second_best_key = LEE_matches[key];
-			LEE_best_key = LEE_matches[key];
+	const LEE_subkeys = responseKey.split(".");
+	let LEE_current_object = LEE_responses;
+	for (const key of LEE_subkeys) {
+		if (LEE_current_object) {
+			LEE_current_object = LEE_current_object[key]; // resolve key
+		} else {
 			if (LEE_DEBUG_MODE) {
-				LEE_print_debug_error(`Best cost is ${LEE_cost} with key "${key}" from rule ${LEE_matches[key]}`, LEE_css_selectors.debug);
+				LEE_print_debug_error(`Key "${responseKey}" does not exist.`);
+				return undefined; // the supplied key does not exist, return undefined and let calling function handle
 			}
 		}
-		if (LEE_cost === 0) { // exact match, short-circuit
-			return LEE_best_key;
-		}
 	}
-	if (input.length * LEE_config.suggestionRange[0] <= LEE_cost && LEE_cost <= input.length * LEE_config.suggestionRange[1]) {
-		LEE_handle_suggestion(input, LEE_second_best_key);
-		return -1;
-	} else if (input.length * LEE_config.errorMargin < LEE_cost) { // too many edits to be made with levenshtein algorithm, likely not a close match
-		return null;
-	}
-	return LEE_best_key;
+	return LEE_current_object;
 }
 
+// - - - commands - - -
 function LEE_detect_command(input) {
 	for (const command of LEE_commands) {
 		if (input.split(" ")[0].includes(command)) { // detects commands only if they occur at the start
@@ -290,25 +308,6 @@ function LEE_detect_command(input) {
 		}
 	}
 	return false;
-}
-
-function LEE_handle_suggestion(original_input, closest_key) {
-	let LEE_best_key = LEE_index_from_string(closest_key);
-	if (LEE_DEBUG_MODE) {
-		LEE_print_debug_error(`Computing closest match for key ${closest_key}`, LEE_css_selectors.debug);
-	}
-	let LEE_best_closest_match = null;
-	let LEE_cost = null;
-	for (const key of LEE_best_key["match"]) {
-		let LEE_new_cost = lev.levenshtein(key, original_input);
-		if (LEE_cost === null || LEE_new_cost < LEE_cost) {
-			LEE_cost = LEE_new_cost;
-			LEE_best_closest_match = key;
-		}
-	}
-	let LEE_reply = `${LEE_config.undefinedMessage} ${LEE_config.suggestionMessage}\n${LEE_best_closest_match}`;
-	LEE_construct_message(LEE_config.leeName, LEE_reply);
-	LEE_scroll_down();
 }
 
 function LEE_handle_command(input) {
@@ -368,6 +367,19 @@ function LEE_command_reinit() {
 	}
 }
 
+// - - - IO - - -
+function LEE_input_listener(event) {
+	if (event.code === "Enter") {
+		LEE_lock_wrapper(LEE_get_input);
+	} else if (event.code === "ArrowUp") {
+		event.preventDefault(); // would move caret to the left
+		LEE_set_from_history(1);
+	} else if (event.code === "ArrowDown") {
+		event.preventDefault();
+		LEE_set_from_history(-1);
+	}
+}
+
 async function LEE_get_input() {
 	let LEE_user_input = LEE_input.value;
 	LEE_add_to_history(LEE_user_input);
@@ -387,7 +399,7 @@ async function LEE_get_input() {
 	let LEE_reply = LEE_results[0];
 	let LEE_delay = LEE_results[1];
 	let LEE_encode = LEE_results[2];
-	if (LEE_reply === undefined && LEE_config.undefinedMessage !== null) {
+	if ((LEE_reply === undefined || LEE_reply === null) && LEE_config.undefinedMessage !== null) {
 		LEE_reply = LEE_config.undefinedMessage;
 	}
 	if (LEE_reply) {
@@ -398,20 +410,6 @@ async function LEE_get_input() {
 	}
 	LEE_scroll_down();
 }
-
-function LEE_input_listener(event) {
-	if (event.code === "Enter") {
-		LEE_lock_wrapper(LEE_get_input);
-	} else if (event.code === "ArrowUp") {
-		event.preventDefault(); // would move caret to the left
-		LEE_set_from_history(1);
-	} else if (event.code === "ArrowDown") {
-		event.preventDefault();
-		LEE_set_from_history(-1);
-	}
-}
-
-LEE_input.addEventListener("keydown", LEE_input_listener);
 
 function LEE_sanitize_input(message, lower = true) {
 	message = message.trim(); // remove trailing and preceding spaces
@@ -426,27 +424,6 @@ function LEE_sanitize_input(message, lower = true) {
 		message = message.toLowerCase();
 	}
 	return message;
-}
-
-function LEE_add_to_history(item) {
-	if (LEE_history[0] !== item) {
-		LEE_history.unshift(item);
-	}
-	LEE_history_index = -1;
-}
-
-function LEE_set_from_history(index) {
-	if (LEE_history_index + index === -1) {
-		LEE_history_index = -1;
-		LEE_input.value = null;
-	}
-	if (LEE_history_index + index > -1 && LEE_history_index + index < LEE_history.length) {
-		LEE_history_index += index;
-	}
-	if (LEE_history[LEE_history_index]) {
-		LEE_input.value = LEE_history[LEE_history_index];
-	}
-	LEE_input.setSelectionRange(LEE_input.value.length, LEE_input.value.length);
 }
 
 async function LEE_construct_message(from, message, delay = 0, encode = false) {
@@ -478,6 +455,37 @@ async function LEE_construct_message(from, message, delay = 0, encode = false) {
 	return LEE_chatlog_msg_container; // return to potentially apply more styling to the container
 }
 
+async function LEE_print_debug_error(msg, severity = LEE_css_selectors.error) {
+	const LEE_debug_msg = await LEE_construct_message(LEE_config.debugName, msg);
+	LEE_debug_msg.classList.add(severity);
+}
+
+function LEE_add_to_history(item) {
+	if (LEE_history[0] !== item) {
+		LEE_history.unshift(item);
+	}
+	LEE_history_index = -1;
+}
+
+function LEE_set_from_history(index) {
+	if (LEE_history_index + index === -1) {
+		LEE_history_index = -1;
+		LEE_input.value = null;
+	}
+	if (LEE_history_index + index > -1 && LEE_history_index + index < LEE_history.length) {
+		LEE_history_index += index;
+	}
+	if (LEE_history[LEE_history_index]) {
+		LEE_input.value = LEE_history[LEE_history_index];
+	}
+	LEE_input.setSelectionRange(LEE_input.value.length, LEE_input.value.length);
+}
+
+function LEE_scroll_down() {
+	LEE_chatlog_container.scrollTop = LEE_chatlog_container.scrollHeight;
+}
+
+// - - - IO blocking - - -
 function LEE_obtain_lock() {
 	LEE_input.disabled = true;
 	LEE_input.classList.add(LEE_css_selectors.lock);
@@ -495,15 +503,7 @@ async function LEE_lock_wrapper(func, ...args) {
 	LEE_discard_lock();
 }
 
-function LEE_scroll_down() {
-	LEE_chatlog_container.scrollTop = LEE_chatlog_container.scrollHeight;
-}
-
-async function LEE_print_debug_error(msg, severity = LEE_css_selectors.error) {
-	const LEE_debug_msg = await LEE_construct_message(LEE_config.debugName, msg);
-	LEE_debug_msg.classList.add(severity);
-}
-
+// - - - utility - - -
 function LEE_compare_array(a1, a2) {
 	if (!Array.isArray(a1) || !Array.isArray(a2)) {
 		return false;
@@ -514,6 +514,14 @@ function LEE_compare_array(a1, a2) {
 		if (!(a1[i] === a2[i])) { return false; }
 	}
 	return true;
+}
+
+function LEE_pretty_JSON(msg) {
+	return JSON.stringify(msg, null, 4);
+}
+
+function LEE_remove_symbols(str) {
+	return str.replace(/[^a-zA-Z0-9 ]/g, ""); // select everything a-z A-Z 0-9 and whitespace, ^ inverts everything -> removes everything not in the previously selected, /g is for all occurrences
 }
 
 /*
