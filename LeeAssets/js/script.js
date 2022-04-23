@@ -288,13 +288,13 @@ function LEE_index_from_string(responseKey) {
 	const LEE_subkeys = responseKey.split(".");
 	let LEE_current_object = LEE_responses;
 	for (const key of LEE_subkeys) {
-		if (LEE_current_object) {
+		if (LEE_current_object && LEE_current_object[key]) {
 			LEE_current_object = LEE_current_object[key]; // resolve key
 		} else {
 			if (LEE_DEBUG_MODE) {
 				LEE_print_debug_error(`Key "${responseKey}" does not exist.`);
-				return undefined; // the supplied key does not exist, return undefined and let calling function handle
 			}
+			return undefined; // the supplied key does not exist, return undefined and let calling function handle
 		}
 	}
 	return LEE_current_object;
