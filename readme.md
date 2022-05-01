@@ -21,6 +21,9 @@ To change the behavior of the bot you need to modify [`./LeeAssets/config/LeeCon
     "initMsg" : "Hi! My name is Lee and I have some cool functionality. Use !commands to show special actions.",
     "initMsgDelay" : 300,
     "attributes" : ["match", "response", "ref", "random", "delay", "counter"],
+    "context": ["Can you explain further?", "Why?", "What?", "How?"],
+    "autoExtendContext" : true,
+    "contextMargin" : 1.3,
     "undefinedMessage" : "I unfortunately do not understand you.",
     "errorMargin" : 1.2,
     "suggestionRange" : [1.2, 1.4],
@@ -40,6 +43,12 @@ To change the behavior of the bot you need to modify [`./LeeAssets/config/LeeCon
 
 `attributes` contains all keys a rule can have, you can extend this with your own custom keys. For each rule every element of this array will get initialized to `null` (`0` for `counter`, `false` for `random` and `encode`) if it is not present. Deleting any element will likely result in errors.
 
+`context` contains the standard context elements that are used when either `autoExtendContext` is true or the rule explicitly specifies a context extension. This system is explained [here](#context).
+
+`autoExtendContext` specifies whether rules should automatically have their context array extended to include all values of `context`.
+
+`contextMargin` works in the same way as `errorMargin` does but only applies to context handling.
+
 `undefinedMessage` is the message the bot will send if it is unsure of what to answer. This is determined using the `errorMargin` value you can read more about [here](#unknown-replies).
 
 `suggestionRange` is an array of length 2 that holds the multipliers for the suggestion matching. If the final cost value is within this range, the closest match will suggested. `suggestionMessage` will be displayed above the closest match.
@@ -55,12 +64,14 @@ To change the behavior of the bot you need to modify [`./LeeAssets/config/LeeCon
 "rules" : {
     "categoryIdentifier" : {
         "ruleIdentifier" : {
-            "match"    : "either a single string or an array [] of strings",
-            "response" : "either a single string or an array [] of strings",
-            "ref"      : "a redirect to another rule",
-            "random"   : "bool, specifies whether to pick a random entry from the response array []",
-            "delay"    : "float, specifies for how long to wait before sending the response",
-            "encode"   : "bool, specifies whether response should be interpreted as text or as HTML"
+            "match"         : "either a single string or an array [] of strings",
+            "response"      : "either a single string or an array [] of strings",
+            "ref"           : "a redirect to another rule",
+            "random"        : "bool, specifies whether to pick a random entry from the response array []",
+            "delay"         : "float, specifies for how long to wait before sending the response",
+            "encode"        : "bool, specifies whether response should be interpreted as text or as HTML",
+            "context"       : "either a single string or an array [] of strings",
+            "contextExtend" : "bool, specifies whether the context array should be extended for this rule"
         }
     }
 }
@@ -71,7 +82,7 @@ The `match` attribute specifies what keywords or sentences trigger its rule. It 
 
 The `response` attribute specifies what the bot will answer when a given rule is triggered. It works the same as the `match` attribute in terms of type and entries. The array will be used in sequence each time the rule is triggered. Example array: `["Response 1", "Response 2", "Response 3"]`, when the rule is triggered for the first time the bot will respond with `Response 1`, on the second trigger it will respond with `Response 2` and so on. If there aren't any new responses remaining the last entry will be repeated. If `random` is `true`, then one of the entries will be chosen at random. The `delay` attribute (in ms) specifies for how long the bot will pause before sending the message. This can be used to simulate a processing time.
 
-The `ref` attribute redirects to another rule. If the origin rule has no `response` the redirect is carried out on rule trigger. If there is a `response` the redirect is carried out after the end of the array has been reached. If `random` is `true` a redirect is not possible. `ref` takes the format of `categoryIdentifier.ruleIdentifier`. Should the rule be in the same category `categoryIdentifier` can be shortened to `this` (`this.ruleIdentifier`).
+The `ref` attribute redirects to another rule. If the origin rule has no `response` the redirect is carried out on rule trigger. If there is a `response` the redirect is carried out after the end of the array has been reached. If `random` is `true` a redirect is not possible. `ref` takes the format of `categoryIdentifier.ruleIdentifier`. Should the rule be in the same category, `categoryIdentifier` can be shortened to `this` (`this.ruleIdentifier`).
 
 Infinite recursive loops are not permitted. 
 ```json
@@ -94,8 +105,11 @@ This will abandon the answering attempt and throw a debug error. This behavior i
 
 `counter` should not be configured in the config file and is instead initialized to `0`. It is used to keep track of the current array index.
 
-#### Adding new rules
+#### Context
+When a rule has multiple responses, the user needs to resubmit his previous question to trigger the rule again. The context system checks if a previous rule has multiple responses and then checks if the new user input can be considered a context question (What?, Why?, Do you have more information?, ...).
+The `context` attribute of a `rule` contains all phrases that are considered valid context questions. As they can be similar across multiple rules, the `context` attribute of `config` can hold these common phrases. Rules can extend their `context` array by including `contextExtend` with value `true`. `autoExtendContext` in `config` can also be set to `true` to automatically extend the `context` arrays of rules that do not have a `contextExtend` attribute with value `false` and that have a `response` array with more than one element.
 
+#### Adding new rules
 To add new rules, include a new `LEE_module_your_rule` in `script.js` and add it to the chain in `LEE_reply_from_key`. On success it should return the new answer, otherwise `null` is expected. This ensures the `??=` operator works. The name of a new attribute for rules has to be included in the `attributes` part of `config`.
 
 ## Cost calculation
@@ -123,4 +137,4 @@ New custom commands should be lowercase, otherwise they will not be recognized.
 If `LEE_DEBUG_MODE` at the top of `script.js` is set to `true`, the bot will send debug messages when various events occur. During cost calculation the bot will display the best cost value it has found so far. It will also warn about duplicate matches, non-existent keys, undefined responses and infinite `ref` loops. If you want to create your own debug messages call `LEE_print_debug_error(msg, severity)`, with severity being either `null` for `lee__error_message` or another CSS class to apply custom styling (such as with `lee__debug__message`).
 
 ## Packages
-This project uses functions from [js-levenshtein](https://github.com/gustf/js-levenshtein). Even though it is available as a [npm package](https://www.npmjs.com/package/js-levenshtein), the functions were included in the source code to avoid using `require`or `import` as this project is meant to be runnable standalone. The function names were modified to fit the naming scheme and `var` was changed to `let` to avoid variable name collisions. All credit for this code goes to [Gustaf Andersson](https://github.com/gustf).
+This project uses functions from [js-levenshtein](https://github.com/gustf/js-levenshtein). Even though it is available as a [npm package](https://www.npmjs.com/package/js-levenshtein), the functions were included in the source code to avoid using `require`or `import` as this project is meant to be runnable standalone. The code was modified slightly to make it class-compatible. All credit for this code goes to [Gustaf Andersson](https://github.com/gustf).
