@@ -46,6 +46,10 @@ source: https://stackoverflow.com/a/71545953/12203337
     color: #5ead2a;
 }
 
+.lee__warning__message {
+    color: #d66800;
+}
+
 .lee__self__message__container {
     background: #56668348;
 }

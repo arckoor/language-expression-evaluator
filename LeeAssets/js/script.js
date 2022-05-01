@@ -18,11 +18,13 @@ const LEE_css_selectors = {
 	msg_container: "lee__message__container",
 	search: "lee__search__highlight",
 	error: "lee__error__message",
+	warning: "lee__warning__message",
 	debug: "lee__debug__message",
 	selection: "lee__selection",
 };
 
 let LEE_responses;
+let LEE_previous_key;
 let LEE_matches = {};
 let LEE_segments = {};
 let LEE_history = [];
@@ -60,8 +62,9 @@ async function LEE_load_config() {
 function LEE_sanitize_data() {
 	for (const topic in LEE_responses) {
 		for (const rule in LEE_responses[topic]) {
+			const c_rule = LEE_responses[topic][rule];
 			for (const key of LEE_config.attributes) {
-				if (!(key in LEE_responses[topic][rule])) {
+				if (!(key in c_rule)) {
 					let _default = null;
 					switch(key) { // initialize non-existent keys
 						case "counter":
@@ -69,19 +72,28 @@ function LEE_sanitize_data() {
 							break;
 						case "random":
 						case "encode":
+						case "contextExtend":
 							_default = false;
 							break;
+						case "context":
+							_default = [];
 					}
-					LEE_responses[topic][rule][key] = _default;
+					c_rule[key] = _default;
 				}
 			}
-			for (const key of ["match", "response"]) { // transform to array to make indexing, counting and referring easier
-				if (typeof(LEE_responses[topic][rule][key]) === "string") {
-					LEE_responses[topic][rule][key] = [LEE_responses[topic][rule][key]];
+			for (const key of ["match", "response", "context"]) { // transform to array to make indexing, counting and referring easier
+				if (typeof(c_rule[key]) === "string") {
+					c_rule[key] = [c_rule[key]];
 				}
 			}
-			if (LEE_responses[topic][rule]["match"]) { // construct rule to key mapping
-				const _match = LEE_responses[topic][rule]["match"];
+			if (c_rule["contextExtend"] !== false && c_rule["response"] && c_rule["response"].length > 1) {
+				if (c_rule["contextExtend"] === true || LEE_config.autoExtendContext === true) {
+					const contextArray = c_rule["context"];
+					LEE_config.context.forEach((v) => { if (!contextArray.includes(v)) { contextArray.push(v); } });
+				}
+			}
+			if (c_rule["match"]) { // construct rule to key mapping
+				const _match = c_rule["match"];
 				const match_key = `${topic}.${rule}`;
 				for (let match of _match) {
 					let original_match = match;
@@ -150,10 +162,10 @@ function LEE_calculate_match(input) {
 			return best_key;
 		}
 	}
-	if (input.length * LEE_config.suggestionRange[0] <= cost && cost <= input.length * LEE_config.suggestionRange[1]) {
+	if (cost !== null && input.length * LEE_config.suggestionRange[0] <= cost && cost <= input.length * LEE_config.suggestionRange[1]) {
 		LEE_handle_suggestion(input, best_key);
 		return -1;
-	} else if (input.length * LEE_config.errorMargin < cost) { // too many edits to be made with levenshtein algorithm, likely not a close match
+	} else if (cost === null || input.length * LEE_config.errorMargin < cost) { // too many edits to be made with levenshtein algorithm, likely not a close match
 		return null;
 	}
 	return best_key;
@@ -217,16 +229,16 @@ async function LEE_reply_from_key(key, previousKey = null) {
 	reply ??= LEE_module_sequence(rule);
 	reply ??= await LEE_module_ref(rule, key, previousKey);
 	if (reply !== null && rule !== undefined && !LEE_compare_array(reply, [undefined]) && !LEE_compare_array(reply, [null])) {
-		return previousKey === null ? [reply, rule["delay"], rule["encode"]] : reply;
+		return Array.isArray(reply) ? reply : [reply, key, rule["delay"], rule["encode"]];
 	} else if (LEE_DEBUG_MODE && rule !== undefined && !LEE_compare_array(reply, [null])) {
 		let prevkey_addition = ""; // used when the key is recursive
 		if (previousKey) {
-			prevkey_addition = `\n\nFrom Key: ${previousKey} : ${LEE_pretty_JSON(LEE_index_from_string(previousKey))}`;
+			prevkey_addition = `\n\nFrom key:\n${previousKey} : ${LEE_pretty_JSON(LEE_index_from_string(previousKey))}`;
 		}
-		LEE_print_debug_error(`No response defined for:\n${key} : ${LEE_pretty_JSON(LEE_index_from_string(key))}${prevkey_addition}`);
+		LEE_print_debug_error(`No response defined for key\n${key} : ${LEE_pretty_JSON(LEE_index_from_string(key))}${prevkey_addition}`);
 		return [null];
 	}
-	return LEE_compare_array(reply, [null]) ? [null] : [undefined];
+	return reply;
 }
 
 function LEE_module_exists(rule) {
@@ -266,7 +278,7 @@ async function LEE_module_ref(rule, key, previousKey) {
 		}
 		if (previousKey === key) { // would recurse until infinity (or until the stack runs out of space)
 			if (LEE_DEBUG_MODE) {
-				LEE_print_debug_error(`Recursion detected:\n${key} ${LEE_pretty_JSON(LEE_index_from_string(key))}`);
+				LEE_print_debug_error(`Recursion detected.\n${key} : ${LEE_pretty_JSON(LEE_index_from_string(key))}`);
 			}
 			return [null];
 		}
@@ -298,6 +310,24 @@ function LEE_index_from_string(responseKey) {
 		}
 	}
 	return current_object;
+}
+
+function LEE_check_context(input) {
+	if (!LEE_previous_key) { return false; }
+	const previousRule = LEE_index_from_string(LEE_previous_key);
+	if (previousRule["response"] && previousRule["response"].length > 1) {
+		let cost = null;
+		for (const context of previousRule["context"]) {
+			let new_cost = LEE_calculate_cost(context, input);
+			if (cost === null || new_cost < cost) {
+				cost = new_cost;
+			}
+		}
+		if (cost !== null && input.length * LEE_config.contextMargin > cost) {
+			return true;
+		}
+	}
+	return false;
 }
 
 // - - - commands - - -
@@ -393,12 +423,18 @@ async function LEE_get_input() {
 		LEE_handle_command(treated_input);
 		return;
 	}
-	const best_match = LEE_calculate_match(treated_input);
-	if (best_match === -1) { return; }
-	const results = await LEE_reply_from_key(best_match);
+	let results;
+	if (LEE_check_context(treated_input)) {
+		results = await LEE_reply_from_key(LEE_previous_key);
+	} else {
+		const best_match = LEE_calculate_match(treated_input);
+		if (best_match === -1) { return; }
+		results = await LEE_reply_from_key(best_match);
+	}
 	let reply = results[0];
-	let delay = results[1];
-	let encode = results[2];
+	LEE_previous_key = results[1];
+	let delay = results[2];
+	const encode = results[3];
 	if ((reply === undefined || reply === null) && LEE_config.undefinedMessage !== null) {
 		reply = LEE_config.undefinedMessage;
 	}
@@ -407,6 +443,10 @@ async function LEE_get_input() {
 			delay = LEE_randint(LEE_config.randomInterval[0], LEE_config.randomInterval[1]);
 		}
 		await LEE_construct_message(LEE_config.leeName, reply, delay, encode);
+	} else {
+		if (LEE_DEBUG_MODE) {
+			LEE_print_debug_error(`Expected a message, but got an empty reply from key\n${LEE_previous_key} : ${LEE_pretty_JSON(LEE_index_from_string(LEE_previous_key))}`, LEE_css_selectors.warning);
+		}
 	}
 	LEE_scroll_down();
 }

@@ -50,6 +50,10 @@ source: https://stackoverflow.com/a/71545953/12203337
     color: #53ad17;
 }
 
+.lee__warning__message {
+    color: #cc8502;
+}
+
 .lee__self__message__container {
     background: #9493935b;
 }
