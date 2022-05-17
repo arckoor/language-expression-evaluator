@@ -140,7 +140,7 @@ function LEE_set_equal_name_length() {
 	for (const key in LEE_config) { // set all to equal max length
 		if (key.includes("Name")) {
 			const length_diff = Math.abs(max_name_len - LEE_config[key].length); // get difference between max and name length
-			LEE_config[key] += String.fromCharCode(160).repeat(length_diff); // &nbsp
+			LEE_config[key] += String.fromCharCode(160).repeat(length_diff); // &nbsp;
 		}
 	}
 }
@@ -151,7 +151,7 @@ function LEE_calculate_match(input) {
 	let best_key = null;
 	for (const key in LEE_matches) {
 		let new_cost = LEE_calculate_cost(key, input); // iterate through every key
-		if (cost === null || new_cost < cost) { // only set it new cost is less than previous best cost
+		if (cost === null || new_cost < cost) { // only set if new cost is less than previous best cost
 			cost = new_cost;
 			best_key = LEE_matches[key];
 			if (LEE_DEBUG_MODE) {
