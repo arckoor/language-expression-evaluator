@@ -418,12 +418,12 @@ function LEE_input_listener(event) {
 
 async function LEE_get_input() {
 	let user_input = LEE_input.value;
-	LEE_add_to_history(user_input);
 	LEE_input.value = null;
 	let treated_input = LEE_sanitize_input(user_input);
 	if (treated_input === "" || treated_input === " ") {
 		return;
 	}
+	LEE_add_to_history(user_input);
 	await LEE_construct_message(LEE_config.userName, user_input); // show what user typed
 	if (LEE_config.enableCommands && LEE_detect_command(treated_input)) {
 		LEE_handle_command(treated_input);
@@ -505,6 +505,7 @@ async function LEE_print_debug_error(msg, severity = LEE_css_selectors.error) {
 	const debug_msg = await LEE_construct_message(LEE_config.debugName, msg);
 	debug_msg.classList.add(severity);
 }
+
 
 function LEE_add_to_history(item) {
 	if (LEE_history[0] !== item) {
