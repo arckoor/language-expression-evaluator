@@ -72,8 +72,14 @@ function LEE_sanitize_data() {
 							break;
 						case "random":
 						case "encode":
-						case "contextExtend":
 							_default = false;
+							break;
+						case "contextExtend":
+							if (c_rule["response"] && c_rule["response"].length > 1 && LEE_config.autoExtendContext) {
+								_default = true;
+							} else {
+								_default = false;
+							}
 							break;
 						case "context":
 							_default = [];
