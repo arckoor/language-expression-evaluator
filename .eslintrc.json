@@ -5,7 +5,8 @@
     },
     "extends": "eslint:recommended",
     "parserOptions": {
-        "ecmaVersion": "latest"
+        "ecmaVersion": "latest",
+        "sourceType": "module"
     },
     "rules": {
         "indent": [
@@ -82,6 +83,9 @@
                 "before" : false,
                 "after" : true
             }
-        ]
+        ],
+        "eol-last" : [
+			"error"
+		]
     }
 }
