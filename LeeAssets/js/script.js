@@ -1,11 +1,11 @@
-
 "use strict";
+import js_levenshtein from "./js-levenshtein/js-levenshtein.js";
+
 const LEE_DEBUG_MODE = true; // make this true to print debug messages
 const LEE_config_file_name = "./LeeAssets/config/LeeConfig.json";
 const LEE_config = {};
 const LEE_commands = ["!commands", "!help", "!clear", "!reinit", "!search"];
-// eslint-disable-next-line no-undef
-const LEE_lev = new js_levenshtein();
+const LEE_string_distance = new js_levenshtein();
 const LEE_chatlog_container = document.getElementById("lee__chatlog__container");
 const LEE_input = document.getElementById("lee_input");
 const LEE_css_selectors = {
@@ -180,7 +180,7 @@ function LEE_calculate_match(input) {
 function LEE_calculate_cost(key, input) {
 	key = key.toLowerCase();
 	input = input.toLowerCase();
-	const distance = LEE_lev.levenshtein(key, input);
+	const distance = LEE_string_distance.get_distance(key, input);
 	let key_segments = LEE_remove_symbols(key).split(" ");
 	let input_segments = LEE_remove_symbols(input).split(" ");
 	let part_to_remove = null;
@@ -189,7 +189,7 @@ function LEE_calculate_cost(key, input) {
 	for (const partInput of input_segments) { // match each input segment to the closest rule segment
 		let lowest_part_distance = null;
 		for (const partKey of key_segments) {
-			let part_distance = LEE_lev.levenshtein(partInput, partKey);
+			let part_distance = LEE_string_distance.get_distance(partInput, partKey);
 			if (lowest_part_distance === null || part_distance < lowest_part_distance) {
 				lowest_part_distance = part_distance;
 				part_to_remove = partKey;
@@ -215,7 +215,7 @@ function LEE_handle_suggestion(original_input, closest_key) {
 	let closest_match = null;
 	let cost = null;
 	for (const key of best_key["match"]) {
-		let new_cost = LEE_lev.levenshtein(key, original_input);
+		let new_cost = LEE_string_distance.get_distance(key, original_input);
 		if (cost === null || new_cost < cost) {
 			cost = new_cost;
 			closest_match = key;

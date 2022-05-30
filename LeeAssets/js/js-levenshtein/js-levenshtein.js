@@ -1,4 +1,3 @@
-
 /*
 title: js-levenshtein
 author: Gustaf Andersson
@@ -10,8 +9,7 @@ license: MIT - Copyright (c) 2017 Gustaf Andersson
 For simplicity, these two functions are included in this project instead of imported / required. This is meant to be runnable stand-alone (no node.js / webpack / ...).
 The code was modified slightly to be class compatible.
 */
-// eslint-disable-next-line no-unused-vars
-class js_levenshtein {
+export default class {
 	_min(d0, d1, d2, bx, ay) {
 		return d0 < d1 || d2 < d1
 			? d0 > d2
@@ -22,7 +20,7 @@ class js_levenshtein {
 				: d1 + 1;
 	}
 
-	levenshtein(a, b) {
+	get_distance(a, b) {
 		if (a === b) {
 			return 0;
 		}
