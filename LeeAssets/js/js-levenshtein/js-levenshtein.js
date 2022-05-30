@@ -20,7 +20,7 @@ export default class {
 				: d1 + 1;
 	}
 
-	get_distance(a, b) {
+	getDistance(a, b) {
 		if (a === b) {
 			return 0;
 		}
