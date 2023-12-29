@@ -1,0 +1,50 @@
+:root {
+	--font-family:            'Consolas', 'Lucida Sans', 'Lucida Sans Regular', sans-serif;
+
+	--text-col:               #bdb8b8;
+	--selection-col:          #2b2b2b;
+	--disabled-col:           #494949;
+
+	--self-msg-bg-col:        #9493935b;
+	--user-msg-bg-col:        #5781cf48;
+	--debug-col:              #53ad17;
+	--warn-col:               #cc8502;
+	--err-col:                #f01c1c;
+
+	--highlight-col:          #34817b;
+	--link-col:               #cc8502;
+	
+	--container-bg-col:       #333333;
+	--log-bg-col:             #3d3d3d;
+	--footer-bg-col:          #2b2b2b;
+
+	--scroll-thumb-col:       #242424;
+	--scroll-thumb-hover-col: #5f5f5f;
+	--input-border-col:       #555555;
+	--input-bg-col:           #6e6e6e;
+	--input-focus-col:        #a7a7a7;
+}
+
+body {
+	background-repeat: no-repeat;
+	background-attachment: fixed;
+	background-color: #302297;
+	background-image: linear-gradient(to top right, #383442, #302297);
+	font-family: var(--font-family);
+}
+
+/* https://stackoverflow.com/a/71545953/12203337 */
+.sel::selection,
+.sel *::selection {
+	background-color: var(--selection-col);
+}
+
+/* https://stackoverflow.com/a/4407335 */
+.no-sel {
+	-webkit-touch-callout: none; /* iOS Safari */
+	-webkit-user-select: none; /* Safari */
+	-khtml-user-select: none; /* Konqueror HTML */
+	-moz-user-select: none; /* Old versions of Firefox */
+	-ms-user-select: none; /* Internet Explorer/Edge */
+	user-select: none; /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
+}
