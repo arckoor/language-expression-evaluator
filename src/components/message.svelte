@@ -24,7 +24,9 @@
 <main>
 	<div class={"container " + (determineBackground(fromType)) + (highlight ? " highlight": "")}>
 		{#if fromName}
-			<div class="name no-sel">{fromName}:{#each Array(clamp(0, maxLen-fromName.length, Infinity)) as index (index)}&nbsp;{/each}</div>
+			<div class="name no-sel">
+				{fromName}:{#each Array(clamp(0, maxLen-fromName.length, Infinity)) as index (index)}&nbsp;{/each}
+			</div>
 		{/if}
 		<div class="content sel">
 			{#if encode}

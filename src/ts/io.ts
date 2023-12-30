@@ -38,7 +38,7 @@ export class IO {
 			?? this.ruleModRandom(rule)
 			?? this.ruleModSequence(rule)
 			?? this.ruleModRef(rule, key)
-		;
+			;
 		if (reply === null) throw new Error(`Key ${key} not found`);
 		if (Array.isArray(reply)) return reply as unknown as [string, number, boolean];
 		return [reply, this.ruleModDelay(rule), this.ruleModEncode(rule)];
@@ -114,7 +114,7 @@ export class IO {
 	private ruleModSuggestion(key: string): string | null {
 		if (key === Replies.SUGGESTION) {
 			return this.cfg.undefinedMessage + "\n" + this.cfg.suggestionMessage +
-			` "${indexFromString(this.suggestedMatch, this.responses).match[0]}"?`;
+				` "${indexFromString(this.suggestedMatch, this.responses).match[0]}"?`;
 		}
 		return null;
 	}

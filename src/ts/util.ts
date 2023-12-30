@@ -15,7 +15,7 @@ export function clamp(min: number, num: number, max: number): number {
 
 export function splitFirstSpace(input: string): [string, string] {
 	if (input.indexOf(" ") !== -1) {
-		return [input.substring(0, input.indexOf(" ")), input.substring(input.indexOf(" ")+1)];
+		return [input.substring(0, input.indexOf(" ")), input.substring(input.indexOf(" ") + 1)];
 	}
 	return [input, ""];
 }

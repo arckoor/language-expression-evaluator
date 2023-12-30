@@ -26,19 +26,19 @@ export type Config = {
 }
 
 export type CConfig = {
-	leeName : string
-	userName : string
-	initMsg : string
-	initMsgDelay : number,
+	leeName: string
+	userName: string
+	initMsg: string
+	initMsgDelay: number,
 	context: string[],
-	autoExtendContext : boolean,
-	contextMargin : number,
-	undefinedMessage : string,
-	errorMargin : number,
-	suggestionRange : Range,
-	suggestionMessage : string,
-	enableCommands : boolean,
-	randomInterval : Range
+	autoExtendContext: boolean,
+	contextMargin: number,
+	undefinedMessage: string,
+	errorMargin: number,
+	suggestionRange: Range,
+	suggestionMessage: string,
+	enableCommands: boolean,
+	randomInterval: Range
 }
 
 export type Range = {

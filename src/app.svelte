@@ -32,12 +32,7 @@
 		}
 	});
 
-	async function processInput(input: string, queue: MessageQueue): Promise<void> {
-		const originalInput = input;
-		input = sanitize(input);
-		if (input == "" || input == " ") {
-			return;
-		}
+	async function processInput(input: string, originalInput: string, queue: MessageQueue): Promise<void> {
 		queue.push({
 			fromName: config.userName,
 			fromType: Users.USER,
@@ -61,8 +56,13 @@
 	}
 
 	async function handleInput(input: string): Promise<void> {
-		history.addToHistory(input);
-		await processInput(input, messageQueue);
+		const originalInput = input;
+		input = sanitize(input);
+		if (input == "" || input == " ") {
+			return;
+		}
+		history.addToHistory(originalInput);
+		await processInput(input, originalInput, messageQueue);
 	}
 
 	async function handleKeys(ev: KeyboardEvent): Promise<void> {
@@ -174,7 +174,7 @@
 	height: 25px;
 	margin: 0 20px 0 10px;
 	border-radius: 5px;
-	font-size: 25px;
+	font-size: 22px;
 	transition: border 0.5s;
 	border: 2px solid var(--input-border-col);
 	background: var(--input-bg-col);

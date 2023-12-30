@@ -15,8 +15,11 @@ export class History {
 	}
 
 	public getPreviousHistory(): string {
+		if (this.history.length === 0) {
+			return "";
+		}
 		this.index++;
-		if (this.index > this.history.length-1) {
+		if (this.index > this.history.length - 1) {
 			this.index--;
 		}
 		return this.history[this.index];
@@ -24,7 +27,7 @@ export class History {
 
 	public getNextHistory(): string {
 		this.index--;
-		if (this.index < -1) {
+		if (this.index < 0) {
 			this.index++;
 			return "";
 		}
